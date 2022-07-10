@@ -53,11 +53,124 @@ extension UIImage {
     UIGraphicsEndImageContext()
     return image
     }
+
+    /**
+    Returns the flat colorized version of the image, or self when something was wrong
+
+    - Parameters:
+        - color: The colors to user. By defaut, uses the ``UIColor.white`
+
+    - Returns: the flat colorized version of the image, or the self if something was wrong
+    */
+    func colorized(with color: UIColor = .white) -> UIImage {
+        UIGraphicsBeginImageContextWithOptions(size, false, scale)
+
+        defer {
+            UIGraphicsEndImageContext()
+        }
+
+        guard let context = UIGraphicsGetCurrentContext(), let cgImage = cgImage else { return self }
+
+
+        let rect = CGRect(x: 0, y: 0, width: size.width, height: size.height)
+
+        color.setFill()
+        context.translateBy(x: 0, y: size.height)
+        context.scaleBy(x: 1.0, y: -1.0)
+        context.clip(to: rect, mask: cgImage)
+        context.fill(rect)
+
+        guard let colored = UIGraphicsGetImageFromCurrentImageContext() else { return self }
+
+        return colored
+    }
+
+    /**
+    Returns the stroked version of the fransparent image with the given stroke color and the thickness.
+
+    - Parameters:
+        - color: The colors to user. By defaut, uses the ``UIColor.white`
+        - thickness: the thickness of the border. Default to `2`
+        - quality: The number of degrees (out of 360): the smaller the best, but the slower. Defaults to `10`.
+
+    - Returns: the stroked version of the image, or self if something was wrong
+    */
+
+    func stroked(with color: UIColor = .white, thickness: CGFloat = 2, quality: CGFloat = 10) -> UIImage {
+
+        guard let cgImage = cgImage else { return self }
+
+        // Colorize the stroke image to reflect border color
+        let strokeImage = colorized(with: color)
+
+        guard let strokeCGImage = strokeImage.cgImage else { return self }
+
+        /// Rendering quality of the stroke
+        let step = quality == 0 ? 10 : abs(quality)
+
+        let oldRect = CGRect(x: thickness, y: thickness, width: size.width, height: size.height).integral
+        let newSize = CGSize(width: size.width + 2 * thickness, height: size.height + 2 * thickness)
+        let translationVector = CGPoint(x: thickness, y: 0)
+
+
+        UIGraphicsBeginImageContextWithOptions(newSize, false, scale)
+
+        guard let context = UIGraphicsGetCurrentContext() else { return self }
+
+        defer {
+            UIGraphicsEndImageContext()
+        }
+        context.translateBy(x: 0, y: newSize.height)
+        context.scaleBy(x: 1.0, y: -1.0)
+        context.interpolationQuality = .high
+
+        for angle: CGFloat in stride(from: 0, to: 360, by: step) {
+            let vector = translationVector.rotated(around: .zero, byDegrees: angle)
+            let transform = CGAffineTransform(translationX: vector.x, y: vector.y)
+
+            context.concatenate(transform)
+
+            context.draw(strokeCGImage, in: oldRect)
+
+            let resetTransform = CGAffineTransform(translationX: -vector.x, y: -vector.y)
+            context.concatenate(resetTransform)
+        }
+
+        context.draw(cgImage, in: oldRect)
+
+        guard let stroked = UIGraphicsGetImageFromCurrentImageContext() else { return self }
+
+        return stroked
+    }
+}
+
+
+extension CGPoint {
+    /**
+    Rotates the point from the center `origin` by `byDegrees` degrees along the Z axis.
+
+    - Parameters:
+        - origin: The center of he rotation;
+        - byDegrees: Amount of degrees to rotate around the Z axis.
+
+    - Returns: The rotated point.
+    */
+    func rotated(around origin: CGPoint, byDegrees: CGFloat) -> CGPoint {
+        let dx = x - origin.x
+        let dy = y - origin.y
+        let radius = sqrt(dx * dx + dy * dy)
+        let azimuth = atan2(dy, dx) // in radians
+        let newAzimuth = azimuth + byDegrees * .pi / 180.0 // to radians
+        let x = origin.x + radius * cos(newAzimuth)
+        let y = origin.y + radius * sin(newAzimuth)
+        return CGPoint(x: x, y: y)
+    }
 }
 
 class MessagesViewController: MSMessagesAppViewController {
   @IBOutlet weak var stickerView: MSStickerView!
   @IBOutlet weak var infoLabel: UILabel!
+  var showBorder = false;
   
   func updateUI() {
     
@@ -72,15 +185,18 @@ class MessagesViewController: MSMessagesAppViewController {
     
     let maxSize: CGFloat = 512
     
-    if (false) {
-      content = content.withShadow(blur: 10, offset: CGSize.zero, color: .white)
-    }
-    
     
     var scale = max(content.size.width, content.size.height) / maxSize;
     
     if (scale > 1.0) {
       content = content.resized(to: CGSize(width:content.size.width / scale, height:content.size.height / scale))
+    }
+    
+    
+    if (showBorder) {
+      let distance = min(content.size.width, content.size.height) / 20;
+      content = content.stroked(with: .white, thickness: distance, quality: 10)
+      content = content.withShadow(blur: distance, offset: .init(width: 0, height: distance / 1.5), color: .init(white: 0.2, alpha: 0.333))
     }
     
     let bytes = content.pngData()!.count;
@@ -117,13 +233,18 @@ class MessagesViewController: MSMessagesAppViewController {
     do { try fileManager.createDirectory(at: cacheURL, withIntermediateDirectories: true, attributes: nil) } catch { fatalError("Unable to create cache URL: \(error)") }
     
     let fileName = "image.png";
-    print("Length", image.jpegData(compressionQuality: 0.8)?.count ?? "?")
+    //    print("Length", image.jpegData(compressionQuality: 0.8)?.count ?? "?")
     let url = cacheURL.appendingPathComponent(fileName)
     try! image.pngData()?.write(to: url)
     return url;
   }
   
   @IBAction func refreshUI(_ sender: UIButton) {
+    updateUI();
+  }
+  
+  @IBAction func toggleBorder(_ sender: UIButton) {
+    showBorder = !showBorder;
     updateUI();
   }
   
