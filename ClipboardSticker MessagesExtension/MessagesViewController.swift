@@ -72,8 +72,8 @@ class MessagesViewController: MSMessagesAppViewController {
     
     let maxSize: CGFloat = 512
     
-    if (true) {
-      content = content.withShadow(blur: 10, offset: CGSize.zero, color: .red)
+    if (false) {
+      content = content.withShadow(blur: 10, offset: CGSize.zero, color: .white)
     }
     
     
