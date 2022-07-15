@@ -40,6 +40,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		EA86F889287FF19C00AC5FBA /* Stickerclip-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "Stickerclip-Info.plist"; sourceTree = "<group>"; };
 		EAE7B5242878784700449F7D /* Stickerclip.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Stickerclip.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		EAE7B5272878784900449F7D /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		EAE7B52D2878784900449F7D /* Stickerclip MessagesExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = "Stickerclip MessagesExtension.appex"; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -66,6 +67,7 @@
 		EAE7B51D2878784700449F7D = {
 			isa = PBXGroup;
 			children = (
+				EA86F889287FF19C00AC5FBA /* Stickerclip-Info.plist */,
 				EAF3DC99287C91F900303DF8 /* Stickerclip MessagesExtension.entitlements */,
 				EAE7B5262878784700449F7D /* ClipboardSticker */,
 				EAE7B5342878784900449F7D /* ClipboardSticker MessagesExtension */,
@@ -126,6 +128,8 @@
 				EAE7B5302878784900449F7D /* PBXTargetDependency */,
 			);
 			name = Stickerclip;
+			packageProductDependencies = (
+			);
 			productName = ClipboardSticker;
 			productReference = EAE7B5242878784700449F7D /* Stickerclip.app */;
 			productType = "com.apple.product-type.application.messages";
@@ -143,6 +147,8 @@
 			dependencies = (
 			);
 			name = "Stickerclip MessagesExtension";
+			packageProductDependencies = (
+			);
 			productName = "ClipboardSticker MessagesExtension";
 			productReference = EAE7B52D2878784900449F7D /* Stickerclip MessagesExtension.appex */;
 			productType = "com.apple.product-type.app-extension.messages";
@@ -174,6 +180,8 @@
 				Base,
 			);
 			mainGroup = EAE7B51D2878784700449F7D;
+			packageReferences = (
+			);
 			productRefGroup = EAE7B5252878784700449F7D /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -367,7 +375,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 0.5;
+				MARKETING_VERSION = 0.6;
 				PRODUCT_BUNDLE_IDENTIFIER = com.blacktree.stickerclip.MessagesExtension;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -395,7 +403,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 0.5;
+				MARKETING_VERSION = 0.6;
 				PRODUCT_BUNDLE_IDENTIFIER = com.blacktree.stickerclip.MessagesExtension;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -415,10 +423,11 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = A7X888RRVJ;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "Stickerclip-Info.plist";
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				MARKETING_VERSION = 0.5;
+				MARKETING_VERSION = 0.6;
 				PRODUCT_BUNDLE_IDENTIFIER = com.blacktree.stickerclip;
 				PRODUCT_NAME = Stickerclip;
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -437,10 +446,11 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = A7X888RRVJ;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "Stickerclip-Info.plist";
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				MARKETING_VERSION = 0.5;
+				MARKETING_VERSION = 0.6;
 				PRODUCT_BUNDLE_IDENTIFIER = com.blacktree.stickerclip;
 				PRODUCT_NAME = Stickerclip;
 				SWIFT_EMIT_LOC_STRINGS = YES;

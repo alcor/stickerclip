@@ -1,10 +1,3 @@
-//
-//  MessagesViewController.swift
-//  ClipboardSticker MessagesExtension
-//
-//  Created by Nicholas Jitkoff on 7/8/22.
-//
-
 import UIKit
 import Messages
 
@@ -78,54 +71,64 @@ class MessagesViewController: MSMessagesAppViewController, MSStickerBrowserViewD
     guard var img = pb.image else { return }
     
     var basename = String(pb.changeCount);
-    
     if let url = pb.url {
-      basename = NSString(string:url.lastPathComponent).deletingPathExtension
+      let string = NSString(string:url.lastPathComponent).deletingPathExtension;
+      if (string.count > 0) { basename = string }
     } else if let data = pb.data(forPasteboardType:"com.apple.mobileslideshow.asset.localidentifier") {
       basename = String(decoding: data, as: UTF8.self).replacingOccurrences(of: "/", with: "_")
     }
     
-    let maxSize: CGFloat = 618
-    let midSize: CGFloat = 408
+    var transparent = pb.contains(pasteboardTypes: ["public.png", "public.gif"])
+    let type = transparent ? "public.png" : "public.jpeg";
+
+//    let maxSize: CGFloat = 618
+    let manSize: CGFloat = 534
+//    let midSize: CGFloat = 408
     let minSize: CGFloat = 300
     
-    var transparent = pb.contains(pasteboardTypes: ["public.png", "public.gif"])
+    let initialSize = img.size;
     
-    var scale = max(img.size.width, img.size.height) / midSize;
+    print("Initial Size:", img.size, img.pngData()!.count,  pb.data(forPasteboardType: type)?.count as Any);
     
+    let scale = max(img.size.width, img.size.height) / manSize;
     if (scale > 1.0) {
-      let size = fit(size:img.size, dim: midSize)
+      let size = fit(size:img.size, dim: manSize)
       img = img.resized(to: size)
     }
+    print("Cropped Size:", img.size, img.pngData()!.count);
   
     if (showBorder) {
       transparent = true;
-      let distance = 16.0; //max(img.size.width, img.size.height) / 20;
+      let distance = max(img.size.width, img.size.height) / 20;
       img = img.stroked(with: .white, thickness: distance, quality: 10)
-      img = img.withShadow(blur: distance/2, offset: .init(width: 0, height: distance / 1.25), color: .init(white: 0.2, alpha: 0.333))
-      img = img.withShadow(blur: distance, offset: .init(width: 0, height: distance / 2), color: .init(white: 0.2, alpha: 0.15))
+      img = img.withShadow(blur: distance/2, offset: .init(width: 0, height: distance / 4), color: .init(white: 0.2, alpha: 0.333))
     }
     
     var bytes = (transparent ? img.pngData() : img.jpegData(compressionQuality: 0.7))!.count;
-    if (bytes > 500000) {
-      print("shrinking", bytes)
+    if (bytes >= 500 * 1024) {
       let size = fit(size:img.size, dim: minSize)
       img = img.resized(to: size)
-
-//      scale = scale * sqrt(2);
-//      img = img.resized(to: CGSize(width:img.size.width / scale, height:img.size.height / scale))
     }
-    
-    print("image size", img.size.width, img.size.height)
-    bytes = (transparent ? img.pngData() : img.jpegData(compressionQuality: 0.7))!.count;
 
+    bytes = (transparent ? img.pngData() : img.jpegData(compressionQuality: 0.7))!.count;
+    print("Final Size:  ", img.size, bytes);
+    
+    var initalData: Data? = nil;
+    if (initialSize == img.size) { initalData = pb.data(forPasteboardType: type); }
     
     let filename = "\(basename)\(showBorder ? "-border":"")\(transparent ? ".png" : ".jpg")"
 
     if let oldFile = stickerFile { try? FileManager.default.removeItem(at:oldFile) }
-    stickerFile = createFile(image: img, filename: filename);
-    print("Writing", stickerFile as Any, img.isTransparent(), bytes)
+    
+    let directory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+    let url = directory.appendingPathComponent(filename)
+    
+    stickerFile = createFile(image: img, data:initalData, url:url);
     let sticker = try? MSSticker(contentsOfFileURL: stickerFile!, localizedDescription: "Pasted Sticker");
+    
+    
+//    encode(png: "hi.png", size: img.size, pixels: img.pngData())
+    print("sticker", sticker as Any)
 
     if ((sticker) != nil) {
       stickerView.sticker = sticker
@@ -140,27 +143,19 @@ class MessagesViewController: MSMessagesAppViewController, MSStickerBrowserViewD
     createStickerFromPasteboard()
   }
   
-  func createFile(image: UIImage, filename: String) -> URL {
-    let fileManager = FileManager.default
-    do {
-      let documents = try fileManager.url(
-        for: .documentDirectory,
-        in: .userDomainMask,
-        appropriateFor: nil,
-        create: false
-      )
-      
-    let url = documents.appendingPathComponent(filename)
-      
-    let type = url.pathExtension
-    
 
-      if (type == "jpg") {
+  func createFile(image: UIImage, data: Data?, url: URL) -> URL {
+    do {
+      
+      let type = url.pathExtension
+      if (data != nil) {
+        try data!.write(to: url)
+      } else if (type == "jpg") {
         try image.jpegData(compressionQuality: 0.7)?.write(to: url)
       } else {
         try image.pngData()?.write(to: url)
       }
-    return url;
+      return url;
       
     } catch { fatalError("Unable to create cache URL: \(error)") }
     
@@ -234,7 +229,9 @@ class MessagesViewController: MSMessagesAppViewController, MSStickerBrowserViewD
 
 extension UIImage {
   func resized(to size: CGSize) -> UIImage {
-    return UIGraphicsImageRenderer(size: size).image { _ in
+    let format = UIGraphicsImageRendererFormat()
+    format.scale = self.scale
+    return UIGraphicsImageRenderer(size: size, format:format).image { _ in
       draw(in: CGRect(origin: .zero, size: size))
     }
   }
@@ -256,7 +253,7 @@ extension UIImage {
         width: max(shadowRect.maxX, size.width) - min(shadowRect.minX, 0),
         height: max(shadowRect.maxY, size.height) - min(shadowRect.minY, 0)
       ),
-      false, 0
+      false, self.scale
     )
     
     let context = UIGraphicsGetCurrentContext()!
