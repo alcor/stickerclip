@@ -3,12 +3,14 @@ import Messages
 
 class MessagesViewController: MSMessagesAppViewController, MSStickerBrowserViewDataSource {
   @IBOutlet weak var stickerView: MSStickerView!
+  @IBOutlet weak var stickerOutlineView: UIImageView!
   @IBOutlet  var stickerBrowser: MSStickerBrowserView!
   @IBOutlet weak var reloadButton: UIButton!
   @IBOutlet weak var historyButton: UIButton!
   @IBOutlet weak var infoLabel: UITextView!
   @IBOutlet weak var containerView: UIView!
   @IBOutlet weak var toolbarView: UIView!
+  var forcePaste = false;
   
   lazy var files: Array<URL> = {
     return loadSortedFiles()
@@ -60,17 +62,46 @@ class MessagesViewController: MSMessagesAppViewController, MSStickerBrowserViewD
   
   func createStickerFromPasteboard() {
     let pb = UIPasteboard.general;
-    print("Pasteboard types:", pb.types, pb.changeCount)
+    print("Pasteboard types:", pb.types, pb.changeCount, forcePaste)
     
-    if (!pb.hasImages) {
+    let validPb = pb.hasImages || (forcePaste == true && pb.hasStrings)
+    if (!validPb) {
       infoLabel.isHidden = false
       stickerView.isHidden = true
+      stickerOutlineView.isHidden = true
       return
     }
     
-    guard var img = pb.image else { return }
-    
+    //    let maxSize: CGFloat = 618
+        let manSize: CGFloat = 534
+    //    let midSize: CGFloat = 408
+        let minSize: CGFloat = 300
+        
     var basename = String(pb.changeCount);
+    var transparent = pb.contains(pasteboardTypes: ["public.png", "public.gif"])
+
+    var textImg: UIImage?
+    
+    if (!pb.hasImages) {
+      if let string = pb.string {
+        transparent = true
+        let style = NSMutableParagraphStyle()
+        style.alignment = NSTextAlignment.center
+        if (string.count <= 3) {
+          let font = UIFont.boldSystemFont(ofSize: manSize)
+          textImg = string.image( withAttributes: [.foregroundColor: UIColor.darkText, .font: font, .paragraphStyle:style], size:CGSize(width:manSize, height:manSize), offsetY: (manSize - font.lineHeight)/2)
+        } else {
+          let font = UIFont.boldSystemFont(ofSize: 24)
+          textImg = string.image( withAttributes: [.foregroundColor: UIColor.darkText, .font: font, .paragraphStyle:style])
+
+        }
+        basename = string.replacingOccurrences(of: "/", with: "_")
+      }
+    }
+    
+    guard var img = textImg ?? pb.image else { return }
+    
+    
     if let url = pb.url {
       let string = NSString(string:url.lastPathComponent).deletingPathExtension;
       if (string.count > 0) { basename = string }
@@ -78,14 +109,9 @@ class MessagesViewController: MSMessagesAppViewController, MSStickerBrowserViewD
       basename = String(decoding: data, as: UTF8.self).replacingOccurrences(of: "/", with: "_")
     }
     
-    var transparent = pb.contains(pasteboardTypes: ["public.png", "public.gif"])
     let type = transparent ? "public.png" : "public.jpeg";
 
-//    let maxSize: CGFloat = 618
-    let manSize: CGFloat = 534
-//    let midSize: CGFloat = 408
-    let minSize: CGFloat = 300
-    
+
     let initialSize = img.size;
     
     print("Initial Size:", img.size, img.pngData()!.count,  pb.data(forPasteboardType: type)?.count as Any);
@@ -133,6 +159,7 @@ class MessagesViewController: MSMessagesAppViewController, MSStickerBrowserViewD
     if ((sticker) != nil) {
       stickerView.sticker = sticker
       stickerView.isHidden = false
+      stickerOutlineView.isHidden = false
       toolbarView.isHidden = false
       reloadButton.isHidden = true
       infoLabel.isHidden = true
@@ -179,7 +206,9 @@ class MessagesViewController: MSMessagesAppViewController, MSStickerBrowserViewD
     try! image.pngData()?.write(to: url)
     return url;
   }
+  
   @IBAction func refreshUI(_ sender: UIButton) {
+    forcePaste = true
     createStickerFromPasteboard();
   }
   
@@ -187,6 +216,7 @@ class MessagesViewController: MSMessagesAppViewController, MSStickerBrowserViewD
     let size = sender.tag;
     let d = (CGFloat(size) - stickerView.frame.size.width) / 2
     self.stickerView.frame = self.stickerView.frame.insetBy(dx: -d, dy: -d)
+    self.stickerOutlineView.frame = self.stickerOutlineView.frame.insetBy(dx: -d, dy: -d)
   }
   
   @IBAction func toggleBorder(_ sender: UIButton) {
@@ -389,4 +419,25 @@ extension CGPoint {
         let y = origin.y + radius * sin(newAzimuth)
         return CGPoint(x: x, y: y)
     }
+}
+
+extension String {
+    
+    /// Generates a `UIImage` instance from this string using a specified
+    /// attributes and size.
+    ///
+    /// - Parameters:
+    ///     - attributes: to draw this string with. Default is `nil`.
+    ///     - size: of the image to return.
+    /// - Returns: a `UIImage` instance from this string using a specified
+    /// attributes and size, or `nil` if the operation fails.
+  func image(withAttributes attributes: [NSAttributedString.Key: Any]? = nil, size: CGSize? = nil, offsetY: CGFloat = 0.0) -> UIImage? {
+        var size = size ?? (self as NSString).size(withAttributes: attributes)
+      return UIGraphicsImageRenderer(size: size).image { ctx in
+        size.height *= 2;
+        (self as NSString).draw(in: CGRect(origin: CGPoint(x: 0, y: offsetY), size: size), withAttributes: attributes)
+
+        }
+    }
+    
 }
