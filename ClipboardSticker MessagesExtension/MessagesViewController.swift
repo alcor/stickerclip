@@ -10,6 +10,8 @@ class MessagesViewController: MSMessagesAppViewController, MSStickerBrowserViewD
   @IBOutlet weak var infoLabel: UITextView!
   @IBOutlet weak var containerView: UIView!
   @IBOutlet weak var toolbarView: UIView!
+  @IBOutlet weak var pasteControl: UIControl!
+  
   var forcePaste = false;
   
   lazy var files: Array<URL> = {
@@ -55,35 +57,89 @@ class MessagesViewController: MSMessagesAppViewController, MSStickerBrowserViewD
     return sticker;
   }
   
-  func fit(size: CGSize, dim: CGFloat) -> CGSize {
-    let scale = dim / max(size.width, size.height);
-    return CGSize(width: round(size.width * scale), height: round(size.height * scale))
+  
+  override func canPaste(_ itemProviders: [NSItemProvider]) -> Bool {
+    print("providers", itemProviders)
+    if (itemProviders.count == 0) {
+      showInfo(itemProviders.count == 0);
+    }
+    return true;
   }
   
+  override func paste(itemProviders: [NSItemProvider]) {
+    Task {
+      await createFrom(itemProviders: itemProviders)
+    }
+  }
+  
+  func createFrom(itemProviders: [NSItemProvider]) async {
+    do {
+      let itemProvider = itemProviders.first!
+      let types = itemProvider.registeredTypeIdentifiers
+      let url = await itemProvider.loadObject(ofClass: NSURL.self) as? URL
+      let string = await itemProvider.loadObject(ofClass: NSString.self) as? String
+      let image = await itemProvider.loadObject(ofClass: UIImage.self) as? UIImage
+      let dataPath = try await itemProvider.loadItem(forTypeIdentifier: "public.png") as? URL
+      
+      let data = dataPath != nil ? try Data(contentsOf: dataPath!) : nil;
+//      let data = await itemProvider.load(ofClass: Data.self) as? Data
+      print("data", data)
+      var name = itemProvider.suggestedName ?? "Sticker"
+
+      if (url != nil) {
+        name = NSString(string:url!.lastPathComponent).deletingPathExtension
+      }
+      //
+      //    if  {
+      //      let string = ;
+      //      if (string.count > 0) { basename = string }
+
+      print("image:\(image) string:\(string) url:\(url) as note")
+      createSticker(image: image, string: string, url: url, basename: name, types: types, data:data)
+    } catch { print("Unable to create cache URL: \(error)") }
+  }
+
   func createStickerFromPasteboard() {
     let pb = UIPasteboard.general;
-    print("Pasteboard types:", pb.types, pb.changeCount, forcePaste)
-    
-    let validPb = pb.hasImages || (forcePaste == true && pb.hasStrings)
-    if (!validPb) {
-      infoLabel.isHidden = false
-      stickerView.isHidden = true
-      stickerOutlineView.isHidden = true
-      return
+    Task {
+      await createFrom(itemProviders:pb.itemProviders)
     }
+    return;
+
+    //    var basename = String(pb.changeCount);
+    //    var transparent = pb.contains(pasteboardTypes: ["public.png", "public.gif"])
+    //    let types = pb.types
+    //    let string = pb.string
+    //    let url = pb.url
+    //    let image = pb.image
+    //    createSticker(image: image, string:string, url:url, basename:basename, types:types)
+  }
+  
+  func showInfo(_ state: Bool = true) {
+    infoLabel.isHidden = !state
+    stickerView.isHidden = state
+    stickerOutlineView.isHidden = state
+    pasteControl?.isHidden = state
+  }
+  func createSticker(image: UIImage?, string: String?, url: URL?, basename: String?, types: [String], data: Data?) {
+    
+    print("image \(image) \(string) \(url) \(basename) \(types)")
+    var transparent = types.contains("public.png");
+//      let validPb = image !=  || (forcePaste == true && pb.hasStrings)
+    
+    
+    showInfo(image != nil)
     
     //    let maxSize: CGFloat = 618
         let manSize: CGFloat = 534
     //    let midSize: CGFloat = 408
         let minSize: CGFloat = 300
         
-    var basename = String(pb.changeCount);
-    var transparent = pb.contains(pasteboardTypes: ["public.png", "public.gif"])
 
     var textImg: UIImage?
     
-    if (!pb.hasImages) {
-      if let string = pb.string {
+    if (image == nil) {
+      if let string = string {
         transparent = true
         let style = NSMutableParagraphStyle()
         style.alignment = NSTextAlignment.center
@@ -95,26 +151,20 @@ class MessagesViewController: MSMessagesAppViewController, MSStickerBrowserViewD
           textImg = string.image( withAttributes: [.foregroundColor: UIColor.darkText, .font: font, .paragraphStyle:style])
 
         }
-        basename = string.replacingOccurrences(of: "/", with: "_")
+//        basename = string.replacingOccurrences(of: "/", with: "_")
       }
     }
     
-    guard var img = textImg ?? pb.image else { return }
+    guard var img = textImg ?? image else { return }
     
-    
-    if let url = pb.url {
-      let string = NSString(string:url.lastPathComponent).deletingPathExtension;
-      if (string.count > 0) { basename = string }
-    } else if let data = pb.data(forPasteboardType:"com.apple.mobileslideshow.asset.localidentifier") {
-      basename = String(decoding: data, as: UTF8.self).replacingOccurrences(of: "/", with: "_")
-    }
+
     
     let type = transparent ? "public.png" : "public.jpeg";
 
 
     let initialSize = img.size;
     
-    print("Initial Size:", img.size, img.pngData()!.count,  pb.data(forPasteboardType: type)?.count as Any);
+//    print("Initial Size:", img.size, img.pngData()!.count,  pb.data(forPasteboardType: type)?.count as Any);
     
     let scale = max(img.size.width, img.size.height) / manSize;
     if (scale > 1.0) {
@@ -139,9 +189,11 @@ class MessagesViewController: MSMessagesAppViewController, MSStickerBrowserViewD
     bytes = (transparent ? img.pngData() : img.jpegData(compressionQuality: 0.7))!.count;
     print("Final Size:  ", img.size, bytes);
     
-    var initalData: Data? = nil;
-    if (initialSize == img.size) { initalData = pb.data(forPasteboardType: type); }
-    
+    var initialData: Data? = nil;
+    if (initialSize == img.size) { initialData = data}
+
+    print("initial", initialData)
+
     let filename = "\(basename)\(showBorder ? "-border":"")\(transparent ? ".png" : ".jpg")"
 
     if let oldFile = stickerFile { try? FileManager.default.removeItem(at:oldFile) }
@@ -149,7 +201,7 @@ class MessagesViewController: MSMessagesAppViewController, MSStickerBrowserViewD
     let directory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
     let url = directory.appendingPathComponent(filename)
     
-    stickerFile = createFile(image: img, data:initalData, url:url);
+    stickerFile = createFile(image: img, data:initialData, url:url);
     let sticker = try? MSSticker(contentsOfFileURL: stickerFile!, localizedDescription: "Pasted Sticker");
     
     
@@ -167,9 +219,28 @@ class MessagesViewController: MSMessagesAppViewController, MSStickerBrowserViewD
   }
   override func willBecomeActive(with conversation: MSConversation) {}
   override func didBecomeActive(with conversation: MSConversation) {
-    createStickerFromPasteboard()
+    if #available(iOS 16, *) {
+      
+      let config = UIPasteControl.Configuration()
+      config.baseBackgroundColor = .systemBackground;
+      config.cornerStyle = .capsule
+      let control = UIPasteControl(configuration: config)
+      control.target = self
+      control.frame = stickerView.frame;
+      control.autoresizingMask = stickerView.autoresizingMask;
+      stickerView.superview?.addSubview(control);
+      pasteControl = control
+      showInfo(!UIPasteboard.general.hasImages)
+
+    } else {
+      if (UIPasteboard.general.hasImages) {
+        createStickerFromPasteboard()
+      } else {
+        showInfo(true);
+      }
+          
+    }
   }
-  
 
   func createFile(image: UIImage, data: Data?, url: URL) -> URL {
     do {
@@ -207,9 +278,22 @@ class MessagesViewController: MSMessagesAppViewController, MSStickerBrowserViewD
     return url;
   }
   
+  func fit(size: CGSize, dim: CGFloat) -> CGSize {
+    let scale = dim / max(size.width, size.height);
+    return CGSize(width: round(size.width * scale), height: round(size.height * scale))
+  }
+  
   @IBAction func refreshUI(_ sender: UIButton) {
     forcePaste = true
     createStickerFromPasteboard();
+  }
+  
+  @IBAction func showInfo(_ sender: UIButton) {
+    let url = URL(string: "https://stickerclip.app")!
+    print("open", url, self.extensionContext)
+    self.extensionContext!.open(url, completionHandler: { succeed in
+                print("Open url result: \(succeed)")
+            })
   }
   
   @IBAction func setSize(_ sender: UIButton) {
@@ -440,4 +524,21 @@ extension String {
         }
     }
     
+}
+
+
+
+extension NSItemProvider {
+
+  func loadObject(ofClass aClass: NSItemProviderReading.Type) async -> NSItemProviderReading? {
+    guard self.canLoadObject(ofClass: aClass) else { return nil }
+    
+    return await withCheckedContinuation({ continuation in
+      self.loadObject(ofClass: aClass, completionHandler: { (data, error) in
+        print("Returning \(data), error=\(error)")
+        continuation.resume(returning: data)
+      })
+    })
+    
+  }
 }
