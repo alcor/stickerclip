@@ -370,6 +370,7 @@
 				INFOPLIST_FILE = "ClipboardSticker MessagesExtension/Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = Stickerclip;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 15.5;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -398,6 +399,7 @@
 				INFOPLIST_FILE = "ClipboardSticker MessagesExtension/Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = Stickerclip;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 15.5;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",

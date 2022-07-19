@@ -1,5 +1,6 @@
 import UIKit
 import Messages
+import UniformTypeIdentifiers
 
 class MessagesViewController: MSMessagesAppViewController, MSStickerBrowserViewDataSource {
   @IBOutlet weak var stickerView: MSStickerView!
@@ -14,9 +15,7 @@ class MessagesViewController: MSMessagesAppViewController, MSStickerBrowserViewD
   
   var forcePaste = false;
   
-  lazy var files: Array<URL> = {
-    return loadSortedFiles()
-  }()
+  lazy var files: Array<URL> = { return loadSortedFiles() }()
   var stickerFile: URL?
   let store = UserDefaults.standard
   var showBorder: Bool
@@ -27,7 +26,6 @@ class MessagesViewController: MSMessagesAppViewController, MSStickerBrowserViewD
     showBorder = (store.object(forKey: "showBorder") != nil) ? store.bool(forKey: "showBorder") : true;
     super.init(coder: coder);
   }
-  
   
   func loadSortedFiles() -> Array<URL> {
     let paths = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
@@ -47,6 +45,7 @@ class MessagesViewController: MSMessagesAppViewController, MSStickerBrowserViewD
     }
     return [];
   }
+  
   func numberOfStickers(in stickerBrowserView: MSStickerBrowserView) -> Int {
     return files.count;
   }
@@ -57,9 +56,7 @@ class MessagesViewController: MSMessagesAppViewController, MSStickerBrowserViewD
     return sticker;
   }
   
-  
   override func canPaste(_ itemProviders: [NSItemProvider]) -> Bool {
-    print("providers", itemProviders)
     if (itemProviders.count == 0) {
       showInfo(itemProviders.count == 0);
     }
@@ -79,23 +76,25 @@ class MessagesViewController: MSMessagesAppViewController, MSStickerBrowserViewD
       let url = await itemProvider.loadObject(ofClass: NSURL.self) as? URL
       let string = await itemProvider.loadObject(ofClass: NSString.self) as? String
       let image = await itemProvider.loadObject(ofClass: UIImage.self) as? UIImage
-      let dataPath = try await itemProvider.loadItem(forTypeIdentifier: "public.png") as? URL
+      var type = "public.data";
+      for t in types {
+        if (UTTypeReference(t)?.conforms(to: .image) ?? false) {
+          type = t;
+          break;
+        }
+      }
       
+      let dataPath = try await itemProvider.loadItem(forTypeIdentifier: type) as? URL
       let data = dataPath != nil ? try Data(contentsOf: dataPath!) : nil;
-//      let data = await itemProvider.load(ofClass: Data.self) as? Data
-      print("data", data)
+
       var name = itemProvider.suggestedName ?? "Sticker"
 
       if (url != nil) {
         name = NSString(string:url!.lastPathComponent).deletingPathExtension
       }
-      //
-      //    if  {
-      //      let string = ;
-      //      if (string.count > 0) { basename = string }
 
-      print("image:\(image) string:\(string) url:\(url) as note")
-      createSticker(image: image, string: string, url: url, basename: name, types: types, data:data)
+      print("image:\(image) string:\(string) url:\(url)")
+      createSticker(image: image, string: string, url: url, basename: name, type: type, data:data)
     } catch { print("Unable to create cache URL: \(error)") }
   }
 
@@ -105,14 +104,13 @@ class MessagesViewController: MSMessagesAppViewController, MSStickerBrowserViewD
       await createFrom(itemProviders:pb.itemProviders)
     }
     return;
-
-    //    var basename = String(pb.changeCount);
-    //    var transparent = pb.contains(pasteboardTypes: ["public.png", "public.gif"])
-    //    let types = pb.types
-    //    let string = pb.string
-    //    let url = pb.url
-    //    let image = pb.image
-    //    createSticker(image: image, string:string, url:url, basename:basename, types:types)
+//    var basename = String(pb.changeCount);
+//    var transparent = pb.contains(pasteboardTypes: ["public.png", "public.gif"])
+//    let types = pb.types
+//    let string = pb.string
+//    let url = pb.url
+//    let image = pb.image
+//    createSticker(image: image, string:string, url:url, basename:basename, types:types)
   }
   
   func showInfo(_ state: Bool = true) {
@@ -121,26 +119,23 @@ class MessagesViewController: MSMessagesAppViewController, MSStickerBrowserViewD
     stickerOutlineView.isHidden = state
     pasteControl?.isHidden = state
   }
-  func createSticker(image: UIImage?, string: String?, url: URL?, basename: String?, types: [String], data: Data?) {
-    
-    print("image \(image) \(string) \(url) \(basename) \(types)")
-    var transparent = types.contains("public.png");
-//      let validPb = image !=  || (forcePaste == true && pb.hasStrings)
-    
-    
+  
+  func createSticker(image: UIImage?, string: String?, url: URL?, basename: String?, type: String, data: Data?) {
+    var type = type;
+    var basename = basename;
+    print("image \(image) \(string) \(url) \(basename) \(type)")
+    var transparent = type == "public.png";
     showInfo(image != nil)
     
-    //    let maxSize: CGFloat = 618
-        let manSize: CGFloat = 534
-    //    let midSize: CGFloat = 408
-        let minSize: CGFloat = 300
-        
-
-    var textImg: UIImage?
+//  let maxSize: CGFloat = 618
+    let manSize: CGFloat = 534
+//  let midSize: CGFloat = 408
+    let minSize: CGFloat = 300
     
+    var textImg: UIImage?
     if (image == nil) {
       if let string = string {
-        transparent = true
+          type = UTType.png.identifier
         let style = NSMutableParagraphStyle()
         style.alignment = NSTextAlignment.center
         if (string.count <= 3) {
@@ -151,7 +146,7 @@ class MessagesViewController: MSMessagesAppViewController, MSStickerBrowserViewD
           textImg = string.image( withAttributes: [.foregroundColor: UIColor.darkText, .font: font, .paragraphStyle:style])
 
         }
-//        basename = string.replacingOccurrences(of: "/", with: "_")
+        basename = string.replacingOccurrences(of: "/", with: "_")
       }
     }
     
@@ -159,7 +154,6 @@ class MessagesViewController: MSMessagesAppViewController, MSStickerBrowserViewD
     
 
     
-    let type = transparent ? "public.png" : "public.jpeg";
 
 
     let initialSize = img.size;
@@ -194,7 +188,9 @@ class MessagesViewController: MSMessagesAppViewController, MSStickerBrowserViewD
 
     print("initial", initialData)
 
-    let filename = "\(basename)\(showBorder ? "-border":"")\(transparent ? ".png" : ".jpg")"
+      let ext = UTTypeReference(type)?.preferredFilenameExtension ?? ".png";
+      print("extension", ext)
+    let filename = "\(basename)\(showBorder ? "-border":"").\(ext)"
 
     if let oldFile = stickerFile { try? FileManager.default.removeItem(at:oldFile) }
     
@@ -203,11 +199,7 @@ class MessagesViewController: MSMessagesAppViewController, MSStickerBrowserViewD
     
     stickerFile = createFile(image: img, data:initialData, url:url);
     let sticker = try? MSSticker(contentsOfFileURL: stickerFile!, localizedDescription: "Pasted Sticker");
-    
-    
-//    encode(png: "hi.png", size: img.size, pixels: img.pngData())
-    print("sticker", sticker as Any)
-
+        
     if ((sticker) != nil) {
       stickerView.sticker = sticker
       stickerView.isHidden = false
@@ -217,29 +209,27 @@ class MessagesViewController: MSMessagesAppViewController, MSStickerBrowserViewD
       infoLabel.isHidden = true
     }
   }
+  
   override func willBecomeActive(with conversation: MSConversation) {}
   override func didBecomeActive(with conversation: MSConversation) {
-    if #available(iOS 16, *) {
-      
-      let config = UIPasteControl.Configuration()
-      config.baseBackgroundColor = .systemBackground;
-      config.cornerStyle = .capsule
-      let control = UIPasteControl(configuration: config)
-      control.target = self
-      control.frame = stickerView.frame;
-      control.autoresizingMask = stickerView.autoresizingMask;
-      stickerView.superview?.addSubview(control);
-      pasteControl = control
-      showInfo(!UIPasteboard.general.hasImages)
-
-    } else {
+//    if #available(iOS 16, *) {
+//      let config = UIPasteControl.Configuration()
+//      config.baseBackgroundColor = .systemBackground;
+//      config.cornerStyle = .capsule
+//      let control = UIPasteControl(configuration: config)
+//      control.target = self
+//      control.frame = stickerView.frame;
+//      control.autoresizingMask = stickerView.autoresizingMask;
+//      stickerView.superview?.addSubview(control);
+//      pasteControl = control
+//      showInfo(!UIPasteboard.general.hasImages)
+//    } else {
       if (UIPasteboard.general.hasImages) {
         createStickerFromPasteboard()
       } else {
         showInfo(true);
       }
-          
-    }
+//    }
   }
 
   func createFile(image: UIImage, data: Data?, url: URL) -> URL {
@@ -260,9 +250,6 @@ class MessagesViewController: MSMessagesAppViewController, MSStickerBrowserViewD
   }
   
   func createFile2(image: UIImage) -> URL {
-    //check if all image dimensions
-    //    let isImageDimensionValid = { (_ dimension:CGFloat)->Bool in return dimension >= 300 && dimension <= 618 }
-    
     let cacheURL: URL
     let fileManager = FileManager.default
     let directoryName = UUID().uuidString
@@ -287,15 +274,7 @@ class MessagesViewController: MSMessagesAppViewController, MSStickerBrowserViewD
     forcePaste = true
     createStickerFromPasteboard();
   }
-  
-  @IBAction func showInfo(_ sender: UIButton) {
-    let url = URL(string: "https://stickerclip.app")!
-    print("open", url, self.extensionContext)
-    self.extensionContext!.open(url, completionHandler: { succeed in
-                print("Open url result: \(succeed)")
-            })
-  }
-  
+    
   @IBAction func setSize(_ sender: UIButton) {
     let size = sender.tag;
     let d = (CGFloat(size) - stickerView.frame.size.width) / 2
@@ -310,17 +289,13 @@ class MessagesViewController: MSMessagesAppViewController, MSStickerBrowserViewD
     createStickerFromPasteboard();
   }
   
-  override func didResignActive(with conversation: MSConversation) {
-  }
+//  override func didResignActive(with conversation: MSConversation) {}
   
-  override func didReceive(_ message: MSMessage, conversation: MSConversation) {
-  }
+//  override func didReceive(_ message: MSMessage, conversation: MSConversation) {}
   
-  override func didStartSending(_ message: MSMessage, conversation: MSConversation) {
-  }
-  
-  override func didCancelSending(_ message: MSMessage, conversation: MSConversation) {
-  }
+//  override func didStartSending(_ message: MSMessage, conversation: MSConversation) {}
+
+//  override func didCancelSending(_ message: MSMessage, conversation: MSConversation) {}
   
   override func willTransition(to presentationStyle: MSMessagesAppPresentationStyle) {
     if (presentationStyle == .expanded) {
@@ -335,8 +310,7 @@ class MessagesViewController: MSMessagesAppViewController, MSStickerBrowserViewD
     print(presentationStyle);
   }
   
-  override func didTransition(to presentationStyle: MSMessagesAppPresentationStyle) {
-  }
+//  override func didTransition(to presentationStyle: MSMessagesAppPresentationStyle) {}
   
 }
 
@@ -349,12 +323,13 @@ extension UIImage {
       draw(in: CGRect(origin: .zero, size: size))
     }
   }
+  
   public func isTransparent() -> Bool {
     guard let alpha: CGImageAlphaInfo = self.cgImage?.alphaInfo else { return false }
     return alpha == .first || alpha == .last || alpha == .premultipliedFirst || alpha == .premultipliedLast
   }
+  
   func withShadow(blur: CGFloat = 6, offset: CGSize = .zero, color: UIColor = UIColor(white: 0, alpha: 0.8)) -> UIImage {
-    
     let shadowRect = CGRect(
       x: offset.width - blur,
       y: offset.height - blur,
@@ -372,11 +347,7 @@ extension UIImage {
     
     let context = UIGraphicsGetCurrentContext()!
     
-    context.setShadow(
-      offset: offset,
-      blur: blur,
-      color: color.cgColor
-    )
+    context.setShadow( offset: offset, blur: blur, color: color.cgColor )
     
     draw(
       in: CGRect(
@@ -535,7 +506,7 @@ extension NSItemProvider {
     
     return await withCheckedContinuation({ continuation in
       self.loadObject(ofClass: aClass, completionHandler: { (data, error) in
-        print("Returning \(data), error=\(error)")
+//        print("Returning \(data), error=\(error)")
         continuation.resume(returning: data)
       })
     })
