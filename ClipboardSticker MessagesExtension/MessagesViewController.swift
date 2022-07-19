@@ -91,9 +91,8 @@ class MessagesViewController: MSMessagesAppViewController, MSStickerBrowserViewD
         if dataPath.startAccessingSecurityScopedResource() {
           data = try Data(contentsOf: dataPath)
         }
-        print("data", data)
-
       }
+      
       var name = itemProvider.suggestedName ?? "Sticker"
 
       if (url != nil) {
@@ -198,9 +197,8 @@ class MessagesViewController: MSMessagesAppViewController, MSStickerBrowserViewD
     
     if (initialSize == img.size && data != nil && data!.count < maxSize) { initialData = data}
 
-      let ext = UTTypeReference(type)?.preferredFilenameExtension ?? ".png";
-      print("extension", ext)
-    let filename = "\(basename)\(showBorder ? "-border":"").\(ext)"
+    let ext = UTTypeReference(type)?.preferredFilenameExtension ?? ".png";
+    let filename = "\(basename ?? "sticker")\(showBorder ? "-border":"").\(ext)"
 
     if let oldFile = stickerFile { try? FileManager.default.removeItem(at:oldFile) }
     
