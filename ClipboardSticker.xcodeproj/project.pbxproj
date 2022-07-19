@@ -8,7 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		EAE7B5282878784900449F7D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = EAE7B5272878784900449F7D /* Assets.xcassets */; };
-		EAE7B52E2878784900449F7D /* Stickerclip MessagesExtension.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = EAE7B52D2878784900449F7D /* Stickerclip MessagesExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		EAE7B52E2878784900449F7D /* Stickerclip MessagesExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = EAE7B52D2878784900449F7D /* Stickerclip MessagesExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		EAE7B5332878784900449F7D /* Messages.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = EAE7B5322878784900449F7D /* Messages.framework */; };
 		EAE7B5362878784900449F7D /* MessagesViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAE7B5352878784900449F7D /* MessagesViewController.swift */; };
 		EAE7B5392878784900449F7D /* MainInterface.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = EAE7B5372878784900449F7D /* MainInterface.storyboard */; };
@@ -26,15 +26,15 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
-		EAE7B5422878784A00449F7D /* Embed App Extensions */ = {
+		EAE7B5422878784A00449F7D /* Embed Foundation Extensions */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
 			dstPath = "";
 			dstSubfolderSpec = 13;
 			files = (
-				EAE7B52E2878784900449F7D /* Stickerclip MessagesExtension.appex in Embed App Extensions */,
+				EAE7B52E2878784900449F7D /* Stickerclip MessagesExtension.appex in Embed Foundation Extensions */,
 			);
-			name = "Embed App Extensions";
+			name = "Embed Foundation Extensions";
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXCopyFilesBuildPhase section */
@@ -120,7 +120,7 @@
 			buildConfigurationList = EAE7B5432878784A00449F7D /* Build configuration list for PBXNativeTarget "Stickerclip" */;
 			buildPhases = (
 				EAE7B5222878784700449F7D /* Resources */,
-				EAE7B5422878784A00449F7D /* Embed App Extensions */,
+				EAE7B5422878784A00449F7D /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
@@ -161,7 +161,7 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 1340;
-				LastUpgradeCheck = 1340;
+				LastUpgradeCheck = 1400;
 				TargetAttributes = {
 					EAE7B5232878784700449F7D = {
 						CreatedOnToolsVersion = 13.4.1;
@@ -429,7 +429,7 @@
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				MARKETING_VERSION = 0.6;
+				MARKETING_VERSION = 0.7;
 				PRODUCT_BUNDLE_IDENTIFIER = com.blacktree.stickerclip;
 				PRODUCT_NAME = Stickerclip;
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -452,7 +452,7 @@
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				MARKETING_VERSION = 0.6;
+				MARKETING_VERSION = 0.7;
 				PRODUCT_BUNDLE_IDENTIFIER = com.blacktree.stickerclip;
 				PRODUCT_NAME = Stickerclip;
 				SWIFT_EMIT_LOC_STRINGS = YES;

@@ -41,7 +41,8 @@ class MessagesViewController: MSMessagesAppViewController, MSStickerBrowserViewD
                return date0.compare(date1) == .orderedDescending
             })
     } catch {
-        print (error)
+      print (error)
+      showInfo(true)
     }
     return [];
   }
@@ -84,18 +85,27 @@ class MessagesViewController: MSMessagesAppViewController, MSStickerBrowserViewD
         }
       }
       
-      let dataPath = try await itemProvider.loadItem(forTypeIdentifier: type) as? URL
-      let data = dataPath != nil ? try Data(contentsOf: dataPath!) : nil;
+      var data: Data?
+      if let dataPath = try await itemProvider.loadItem(forTypeIdentifier: type) as? URL {
+        print("dataPath", dataPath)
+        if dataPath.startAccessingSecurityScopedResource() {
+          data = try Data(contentsOf: dataPath)
+        }
+        print("data", data)
 
+      }
       var name = itemProvider.suggestedName ?? "Sticker"
 
       if (url != nil) {
         name = NSString(string:url!.lastPathComponent).deletingPathExtension
       }
 
-      print("image:\(image) string:\(string) url:\(url)")
+//      print("image:\(image) string:\(string) url:\(url)")
       createSticker(image: image, string: string, url: url, basename: name, type: type, data:data)
-    } catch { print("Unable to create cache URL: \(error)") }
+    } catch {
+      print("Unable to create sticker: \(error)")
+      
+    }
   }
 
   func createStickerFromPasteboard() {
@@ -123,7 +133,7 @@ class MessagesViewController: MSMessagesAppViewController, MSStickerBrowserViewD
   func createSticker(image: UIImage?, string: String?, url: URL?, basename: String?, type: String, data: Data?) {
     var type = type;
     var basename = basename;
-    print("image \(image) \(string) \(url) \(basename) \(type)")
+//    print("image \(image) \(string) \(url) \(basename) \(type)")
     var transparent = type == "public.png";
     showInfo(image != nil)
     
@@ -174,8 +184,9 @@ class MessagesViewController: MSMessagesAppViewController, MSStickerBrowserViewD
       img = img.withShadow(blur: distance/2, offset: .init(width: 0, height: distance / 4), color: .init(white: 0.2, alpha: 0.333))
     }
     
+    let maxSize = 500 * 1024;
     var bytes = (transparent ? img.pngData() : img.jpegData(compressionQuality: 0.7))!.count;
-    if (bytes >= 500 * 1024) {
+    if (bytes >= maxSize) {
       let size = fit(size:img.size, dim: minSize)
       img = img.resized(to: size)
     }
@@ -183,10 +194,9 @@ class MessagesViewController: MSMessagesAppViewController, MSStickerBrowserViewD
     bytes = (transparent ? img.pngData() : img.jpegData(compressionQuality: 0.7))!.count;
     print("Final Size:  ", img.size, bytes);
     
-    var initialData: Data? = nil;
-    if (initialSize == img.size) { initialData = data}
-
-    print("initial", initialData)
+    var initialData: Data? = nil
+    
+    if (initialSize == img.size && data != nil && data!.count < maxSize) { initialData = data}
 
       let ext = UTTypeReference(type)?.preferredFilenameExtension ?? ".png";
       print("extension", ext)
