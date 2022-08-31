@@ -69,8 +69,8 @@
 			children = (
 				EA86F889287FF19C00AC5FBA /* Stickerclip-Info.plist */,
 				EAF3DC99287C91F900303DF8 /* Stickerclip MessagesExtension.entitlements */,
-				EAE7B5262878784700449F7D /* ClipboardSticker */,
-				EAE7B5342878784900449F7D /* ClipboardSticker MessagesExtension */,
+				EAE7B5262878784700449F7D /* Stickerclip */,
+				EAE7B5342878784900449F7D /* Stickerclip MessagesExtension */,
 				EAE7B5312878784900449F7D /* Frameworks */,
 				EAE7B5252878784700449F7D /* Products */,
 			);
@@ -85,12 +85,12 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
-		EAE7B5262878784700449F7D /* ClipboardSticker */ = {
+		EAE7B5262878784700449F7D /* Stickerclip */ = {
 			isa = PBXGroup;
 			children = (
 				EAE7B5272878784900449F7D /* Assets.xcassets */,
 			);
-			path = ClipboardSticker;
+			path = Stickerclip;
 			sourceTree = "<group>";
 		};
 		EAE7B5312878784900449F7D /* Frameworks */ = {
@@ -101,7 +101,7 @@
 			name = Frameworks;
 			sourceTree = "<group>";
 		};
-		EAE7B5342878784900449F7D /* ClipboardSticker MessagesExtension */ = {
+		EAE7B5342878784900449F7D /* Stickerclip MessagesExtension */ = {
 			isa = PBXGroup;
 			children = (
 				EAE7B5352878784900449F7D /* MessagesViewController.swift */,
@@ -109,7 +109,7 @@
 				EAE7B53A2878784A00449F7D /* Assets.xcassets */,
 				EAE7B53C2878784A00449F7D /* Info.plist */,
 			);
-			path = "ClipboardSticker MessagesExtension";
+			path = "Stickerclip MessagesExtension";
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -171,7 +171,7 @@
 					};
 				};
 			};
-			buildConfigurationList = EAE7B5212878784700449F7D /* Build configuration list for PBXProject "ClipboardSticker" */;
+			buildConfigurationList = EAE7B5212878784700449F7D /* Build configuration list for PBXProject "Stickerclip" */;
 			compatibilityVersion = "Xcode 13.0";
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
@@ -369,7 +369,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = A7X888RRVJ;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = "ClipboardSticker MessagesExtension/Info.plist";
+				INFOPLIST_FILE = "Stickerclip MessagesExtension/Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = Stickerclip;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				IPHONEOS_DEPLOYMENT_TARGET = 15.5;
@@ -397,7 +397,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = A7X888RRVJ;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = "ClipboardSticker MessagesExtension/Info.plist";
+				INFOPLIST_FILE = "Stickerclip MessagesExtension/Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = Stickerclip;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				IPHONEOS_DEPLOYMENT_TARGET = 15.5;
@@ -462,7 +462,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		EAE7B5212878784700449F7D /* Build configuration list for PBXProject "ClipboardSticker" */ = {
+		EAE7B5212878784700449F7D /* Build configuration list for PBXProject "Stickerclip" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				EAE7B53D2878784A00449F7D /* Debug */,
