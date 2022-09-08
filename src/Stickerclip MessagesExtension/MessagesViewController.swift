@@ -227,7 +227,7 @@ class MessagesViewController: MSMessagesAppViewController, MSStickerBrowserViewD
       let config = UIPasteControl.Configuration()
       config.baseBackgroundColor = .systemBackground//.white//.init(red: 250/256, green: 194/256, blue: 43/256, alpha: 1.0);
       config.baseForegroundColor = .label//.black
-      config.displayMode = .labelOnly
+      config.displayMode = .iconOnly
       config.cornerStyle = .capsule
       let control = UIPasteControl(configuration: config)
       control.target = self
