@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="21208.1" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" useSafeAreas="YES" colorMatched="YES" initialViewController="ObA-dk-sSI">
+<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="21225" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" useSafeAreas="YES" colorMatched="YES" initialViewController="ObA-dk-sSI">
     <device id="retina6_1" orientation="portrait" appearance="light"/>
     <dependencies>
         <deployment identifier="iOS"/>
-        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="21191"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="21207"/>
         <capability name="Image references" minToolsVersion="12.0"/>
         <capability name="Safe area layout guides" minToolsVersion="9.0"/>
         <capability name="System colors in document resources" minToolsVersion="11.0"/>
@@ -27,34 +27,30 @@
                                 <rect key="frame" x="0.0" y="0.0" width="320" height="300"/>
                                 <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                 <subviews>
-                                    <view contentMode="scaleToFill" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="nz2-Ll-KyH">
+                                    <view contentMode="scaleToFill" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="Ge4-Lu-qvE">
                                         <rect key="frame" x="0.0" y="0.0" width="320" height="300"/>
                                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                         <subviews>
-                                            <button hidden="YES" opaque="NO" contentMode="scaleToFill" fixedFrame="YES" contentHorizontalAlignment="leading" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="TRq-Fq-Ngq">
-                                                <rect key="frame" x="12" y="22" width="300" height="44"/>
+                                            <textView clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="scaleToFill" fixedFrame="YES" editable="NO" textAlignment="natural" selectable="NO" translatesAutoresizingMaskIntoConstraints="NO" id="BzO-3z-Gsj">
+                                                <rect key="frame" x="8" y="32" width="304" height="208"/>
                                                 <autoresizingMask key="autoresizingMask" flexibleMinX="YES" flexibleMaxX="YES" flexibleMinY="YES" flexibleMaxY="YES"/>
-                                                <color key="tintColor" systemColor="secondaryLabelColor"/>
-                                                <inset key="imageEdgeInsets" minX="0.0" minY="0.0" maxX="2.2250738585072014e-308" maxY="0.0"/>
-                                                <state key="normal">
-                                                    <imageReference key="image" image="arrow.triangle.2.circlepath.doc.on.clipboard" catalog="system" symbolScale="large"/>
-                                                </state>
-                                                <connections>
-                                                    <action selector="refreshUI:" destination="ObA-dk-sSI" eventType="touchUpInside" id="l9n-Rp-vPD"/>
-                                                </connections>
-                                            </button>
-                                            <textView hidden="YES" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="scaleToFill" fixedFrame="YES" editable="NO" textAlignment="natural" selectable="NO" translatesAutoresizingMaskIntoConstraints="NO" id="BzO-3z-Gsj">
-                                                <rect key="frame" x="8" y="58" width="304" height="164"/>
-                                                <autoresizingMask key="autoresizingMask" flexibleMinX="YES" flexibleMaxX="YES" flexibleMinY="YES" flexibleMaxY="YES"/>
-                                                <string key="text">Stickerclip creates a sticker from the contents of the clipboard. 
+                                                <string key="text">Stickerclip creates stickers from items on the clipboard. 
 
-Copy an image from Photos or the web and it will appear here.</string>
+Copy an image from files, photos or the web and then paste it here.
+
+Learn more at https://stickerclip.app</string>
                                                 <color key="textColor" systemColor="placeholderTextColor"/>
                                                 <fontDescription key="fontDescription" type="system" pointSize="17"/>
                                                 <textInputTraits key="textInputTraits" autocapitalizationType="sentences"/>
                                             </textView>
-                                            <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="251" verticalHuggingPriority="251" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="B00-S1-ilO">
-                                                <rect key="frame" x="80" y="46" width="160" height="160"/>
+                                        </subviews>
+                                    </view>
+                                    <view contentMode="scaleToFill" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="zWi-27-f5D">
+                                        <rect key="frame" x="0.0" y="0.0" width="320" height="300"/>
+                                        <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                                        <subviews>
+                                            <imageView clipsSubviews="YES" userInteractionEnabled="NO" alpha="0.55000000000000004" contentMode="scaleAspectFit" horizontalHuggingPriority="251" verticalHuggingPriority="251" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="B00-S1-ilO">
+                                                <rect key="frame" x="80" y="42" width="160" height="160"/>
                                                 <autoresizingMask key="autoresizingMask" flexibleMinX="YES" flexibleMaxX="YES" flexibleMaxY="YES"/>
                                                 <color key="tintColor" systemColor="labelColor"/>
                                                 <accessibility key="accessibilityConfiguration">
@@ -63,11 +59,11 @@ Copy an image from Photos or the web and it will appear here.</string>
                                                 <imageReference key="image" image="Clip" symbolScale="large"/>
                                             </imageView>
                                             <view hidden="YES" contentMode="scaleToFill" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="bAU-py-5Yd" customClass="MSStickerView">
-                                                <rect key="frame" x="92" y="58" width="136" height="136"/>
+                                                <rect key="frame" x="92" y="54" width="136" height="136"/>
                                                 <autoresizingMask key="autoresizingMask" flexibleMinX="YES" flexibleMaxX="YES" flexibleMaxY="YES"/>
                                             </view>
                                             <view hidden="YES" contentMode="scaleToFill" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="XuK-oK-M5b">
-                                                <rect key="frame" x="276" y="22" width="44" height="239"/>
+                                                <rect key="frame" x="256" y="36" width="64" height="196"/>
                                                 <autoresizingMask key="autoresizingMask" flexibleMinX="YES" heightSizable="YES" flexibleMaxY="YES"/>
                                                 <subviews>
                                                     <button opaque="NO" tag="206" contentMode="scaleToFill" fixedFrame="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="wzf-Wj-d7P">
@@ -124,6 +120,32 @@ Copy an image from Photos or the web and it will appear here.</string>
                                                     </button>
                                                 </subviews>
                                             </view>
+                                            <button hidden="YES" opaque="NO" contentMode="scaleToFill" fixedFrame="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="k1H-ay-1B1">
+                                                <rect key="frame" x="70" y="2" width="180" height="34"/>
+                                                <autoresizingMask key="autoresizingMask" flexibleMinX="YES" flexibleMaxX="YES" flexibleMaxY="YES"/>
+                                                <color key="tintColor" systemColor="placeholderTextColor"/>
+                                                <state key="normal" title="Button"/>
+                                                <buttonConfiguration key="configuration" style="plain" imagePlacement="trailing" title="Drag sticker to attach it ">
+                                                    <imageReference key="image" image="arrow.up" catalog="system" symbolScale="small"/>
+                                                    <fontDescription key="titleFontDescription" style="UICTFontTextStyleCaption1"/>
+                                                </buttonConfiguration>
+                                                <connections>
+                                                    <action selector="refreshUI:" destination="ObA-dk-sSI" eventType="touchUpInside" id="32T-RV-wBw"/>
+                                                </connections>
+                                            </button>
+                                            <button opaque="NO" contentMode="scaleToFill" fixedFrame="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="qwA-Y7-NKi">
+                                                <rect key="frame" x="70" y="2" width="180" height="34"/>
+                                                <autoresizingMask key="autoresizingMask" flexibleMinX="YES" flexibleMaxX="YES" flexibleMaxY="YES"/>
+                                                <color key="tintColor" systemColor="placeholderTextColor"/>
+                                                <state key="normal" title="Button"/>
+                                                <buttonConfiguration key="configuration" style="plain" imagePlacement="trailing" title="Tap to paste sticker ">
+                                                    <imageReference key="image" image="arrow.down" catalog="system" symbolScale="small"/>
+                                                    <fontDescription key="titleFontDescription" style="UICTFontTextStyleCaption1"/>
+                                                </buttonConfiguration>
+                                                <connections>
+                                                    <action selector="refreshUI:" destination="ObA-dk-sSI" eventType="touchUpInside" id="OaF-6K-Bgo"/>
+                                                </connections>
+                                            </button>
                                         </subviews>
                                     </view>
                                 </subviews>
@@ -136,8 +158,11 @@ Copy an image from Photos or the web and it will appear here.</string>
                     <size key="freeformSize" width="320" height="300"/>
                     <connections>
                         <outlet property="containerView" destination="2Vn-8v-IyA" id="cX2-ep-AL1"/>
-                        <outlet property="infoLabel" destination="BzO-3z-Gsj" id="96z-Uv-bv3"/>
-                        <outlet property="reloadButton" destination="TRq-Fq-Ngq" id="eJ4-is-1ku"/>
+                        <outlet property="dragHintLabel" destination="k1H-ay-1B1" id="1M7-hO-FlS"/>
+                        <outlet property="editorView" destination="zWi-27-f5D" id="rju-qp-82Y"/>
+                        <outlet property="instructionsLabel" destination="BzO-3z-Gsj" id="96z-Uv-bv3"/>
+                        <outlet property="instructionsView" destination="Ge4-Lu-qvE" id="JMg-W9-Hri"/>
+                        <outlet property="pasteHintLabel" destination="qwA-Y7-NKi" id="DwB-RG-WZe"/>
                         <outlet property="stickerBrowser" destination="tBF-Cl-LCD" id="RQi-FA-iCM"/>
                         <outlet property="stickerOutlineView" destination="B00-S1-ilO" id="9yn-I7-HvR"/>
                         <outlet property="stickerView" destination="bAU-py-5Yd" id="Rw4-uj-SFt"/>
@@ -152,7 +177,8 @@ Copy an image from Photos or the web and it will appear here.</string>
     </scenes>
     <resources>
         <image name="Clip" width="160" height="160"/>
-        <image name="arrow.triangle.2.circlepath.doc.on.clipboard" catalog="system" width="116" height="128"/>
+        <image name="arrow.down" catalog="system" width="118" height="128"/>
+        <image name="arrow.up" catalog="system" width="118" height="128"/>
         <image name="circle.circle" catalog="system" width="128" height="123"/>
         <image name="circle.fill" catalog="system" width="128" height="123"/>
         <systemColor name="labelColor">

@@ -8,9 +8,13 @@ class MessagesViewController: MSMessagesAppViewController, MSStickerBrowserViewD
   @IBOutlet  var stickerBrowser: MSStickerBrowserView!
   @IBOutlet weak var reloadButton: UIButton!
   @IBOutlet weak var historyButton: UIButton!
-  @IBOutlet weak var infoLabel: UITextView!
+  @IBOutlet weak var instructionsLabel: UITextView!
+  @IBOutlet weak var dragHintLabel: UIButton!
+  @IBOutlet weak var pasteHintLabel: UIButton!
   @IBOutlet weak var containerView: UIView!
   @IBOutlet weak var toolbarView: UIView!
+  @IBOutlet weak var instructionsView: UIView!
+  @IBOutlet weak var editorView: UIView!
   @IBOutlet weak var pasteControl: UIControl!
   
   var forcePaste = false;
@@ -42,7 +46,7 @@ class MessagesViewController: MSMessagesAppViewController, MSStickerBrowserViewD
             })
     } catch {
       print (error)
-      showInfo(true)
+      showInstructions(true)
     }
     return [];
   }
@@ -59,7 +63,7 @@ class MessagesViewController: MSMessagesAppViewController, MSStickerBrowserViewD
   
   override func canPaste(_ itemProviders: [NSItemProvider]) -> Bool {
     if (itemProviders.count == 0) {
-      showInfo(itemProviders.count == 0);
+      showInstructions(itemProviders.count == 0);
     }
     return true;
   }
@@ -122,11 +126,10 @@ class MessagesViewController: MSMessagesAppViewController, MSStickerBrowserViewD
 //    createSticker(image: image, string:string, url:url, basename:basename, types:types)
   }
   
-  func showInfo(_ state: Bool = true) {
-    infoLabel.isHidden = !state
-    stickerView.isHidden = state
-    stickerOutlineView.isHidden = state
-    pasteControl?.isHidden = state
+  func showInstructions(_ state: Bool = true) {
+    print("Show instructions", state)
+    instructionsView.isHidden = !state
+    editorView.isHidden = state
   }
   
   func createSticker(image: UIImage?, string: String?, url: URL?, basename: String?, type: String, data: Data?) {
@@ -134,7 +137,7 @@ class MessagesViewController: MSMessagesAppViewController, MSStickerBrowserViewD
     var basename = basename;
 //    print("image \(image) \(string) \(url) \(basename) \(type)")
     var transparent = type == "public.png";
-    showInfo(image != nil)
+    showInstructions(image == nil && string == nil && url == nil)
     
 //  let maxSize: CGFloat = 618
     let manSize: CGFloat = 534
@@ -179,7 +182,7 @@ class MessagesViewController: MSMessagesAppViewController, MSStickerBrowserViewD
     if (showBorder) {
       transparent = true;
       let distance = max(img.size.width, img.size.height) / 20;
-      img = img.stroked(with: .white, thickness: distance, quality: 10)
+      img = img.stroked(with: .white, thickness: distance, quality: 8)
       img = img.withShadow(blur: distance/2, offset: .init(width: 0, height: distance / 4), color: .init(white: 0.2, alpha: 0.333))
     }
     
@@ -211,33 +214,36 @@ class MessagesViewController: MSMessagesAppViewController, MSStickerBrowserViewD
     if ((sticker) != nil) {
       stickerView.sticker = sticker
       stickerView.isHidden = false
-      stickerOutlineView.isHidden = false
       toolbarView.isHidden = false
-      reloadButton.isHidden = true
-      infoLabel.isHidden = true
+      pasteHintLabel.isHidden = true
+      dragHintLabel.isHidden = false
+      pasteControl?.isHidden = true
     }
   }
   
   override func willBecomeActive(with conversation: MSConversation) {}
   override func didBecomeActive(with conversation: MSConversation) {
-//    if #available(iOS 16, *) {
-//      let config = UIPasteControl.Configuration()
-//      config.baseBackgroundColor = .systemBackground;
-//      config.cornerStyle = .capsule
-//      let control = UIPasteControl(configuration: config)
-//      control.target = self
-//      control.frame = stickerView.frame;
-//      control.autoresizingMask = stickerView.autoresizingMask;
-//      stickerView.superview?.addSubview(control);
-//      pasteControl = control
-//      showInfo(!UIPasteboard.general.hasImages)
-//    } else {
+    if #available(iOS 16, *) {
+      let config = UIPasteControl.Configuration()
+      config.baseBackgroundColor = .systemBackground//.white//.init(red: 250/256, green: 194/256, blue: 43/256, alpha: 1.0);
+      config.baseForegroundColor = .label//.black
+      config.displayMode = .labelOnly
+      config.cornerStyle = .capsule
+      let control = UIPasteControl(configuration: config)
+      control.target = self
+      control.frame = stickerView.frame.inset(by: .init(top: 10, left: 10, bottom: 10, right: 10));
+      control.autoresizingMask = stickerView.autoresizingMask;
+      
+      stickerView.superview?.addSubview(control);
+      pasteControl = control
+      showInstructions(!UIPasteboard.general.hasImages && !UIPasteboard.general.hasStrings)
+    } else {
       if (UIPasteboard.general.hasImages) {
         createStickerFromPasteboard()
       } else {
-        showInfo(true);
+        showInstructions(true);
       }
-//    }
+    }
   }
 
   func createFile(image: UIImage, data: Data?, url: URL) -> URL {
@@ -287,7 +293,23 @@ class MessagesViewController: MSMessagesAppViewController, MSStickerBrowserViewD
     let size = sender.tag;
     let d = (CGFloat(size) - stickerView.frame.size.width) / 2
     self.stickerView.frame = self.stickerView.frame.insetBy(dx: -d, dy: -d)
-    self.stickerOutlineView.frame = self.stickerOutlineView.frame.insetBy(dx: -d, dy: -d)
+    //self.stickerOutlineView.frame = self.stickerOutlineView.frame.insetBy(dx: -d, dy: -d)
+      
+//      let shapeLayer:CAShapeLayer = CAShapeLayer()
+//      let frameSize = self.stickerOutlineView.frame.size
+//      let shapeRect = CGRect(x: 0, y: 0, width: frameSize.width, height: frameSize.height)
+//
+//      shapeLayer.bounds = shapeRect.inset(by: .init(top: 16 , left: 8, bottom: 16, right: 8))
+//      shapeLayer.position = CGPoint(x: frameSize.width/2, y: frameSize.height/2)
+//      shapeLayer.fillColor = UIColor.clear.cgColor
+//      shapeLayer.strokeColor = UIColor.red.cgColor
+//      shapeLayer.lineWidth = 3
+//      shapeLayer.lineJoin = CAShapeLayerLineJoin.round
+//      shapeLayer.lineDashPattern = [6,3]
+//      shapeLayer.path = UIBezierPath(roundedRect: shapeRect, cornerRadius: 24).cgPath
+//
+//      self.stickerOutlineView.layer.sublayers?.removeAll()
+//      self.stickerOutlineView.layer.addSublayer(shapeLayer)
   }
   
   @IBAction func toggleBorder(_ sender: UIButton) {
