@@ -91,7 +91,6 @@ class MessagesViewController: MSMessagesAppViewController, MSStickerBrowserViewD
       
       var data: Data?
       if let dataPath = try await itemProvider.loadItem(forTypeIdentifier: type) as? URL {
-        print("dataPath", dataPath)
         if dataPath.startAccessingSecurityScopedResource() {
           data = try Data(contentsOf: dataPath)
         }
@@ -103,7 +102,6 @@ class MessagesViewController: MSMessagesAppViewController, MSStickerBrowserViewD
         name = NSString(string:url!.lastPathComponent).deletingPathExtension
       }
 
-//      print("image:\(image) string:\(string) url:\(url)")
       createSticker(image: image, string: string, url: url, basename: name, type: type, data:data)
     } catch {
       print("Unable to create sticker: \(error)")
@@ -134,7 +132,8 @@ class MessagesViewController: MSMessagesAppViewController, MSStickerBrowserViewD
   
   func createSticker(image: UIImage?, string: String?, url: URL?, basename: String?, type: String, data: Data?) {
     var type = type;
-    var basename = basename;
+    var basename = basename
+
 //    print("image \(image) \(string) \(url) \(basename) \(type)")
     var transparent = type == "public.png";
     showInstructions(image == nil && string == nil && url == nil)
@@ -158,7 +157,7 @@ class MessagesViewController: MSMessagesAppViewController, MSStickerBrowserViewD
           textImg = string.image( withAttributes: [.foregroundColor: UIColor.darkText, .font: font, .paragraphStyle:style])
 
         }
-        basename = string.replacingOccurrences(of: "/", with: "_")
+        basename = String(string.prefix(100)).replacingOccurrences(of: "/", with: "_")
       }
     }
     
@@ -197,10 +196,14 @@ class MessagesViewController: MSMessagesAppViewController, MSStickerBrowserViewD
     print("Final Size:  ", img.size, bytes);
     
     var initialData: Data? = nil
-    
-    if (initialSize == img.size && data != nil && data!.count < maxSize) { initialData = data}
 
-    let ext = UTTypeReference(type)?.preferredFilenameExtension ?? ".png";
+    var ext = UTTypeReference(type)?.preferredFilenameExtension ?? "png";
+    if (initialSize == img.size && data != nil && data!.count < maxSize) {
+      initialData = data
+    } else {
+      ext = transparent ? "png" : "jpg"
+    }
+
     let filename = "\(basename ?? "sticker")\(showBorder ? "-border":"").\(ext)"
 
     if let oldFile = stickerFile { try? FileManager.default.removeItem(at:oldFile) }
@@ -247,12 +250,13 @@ class MessagesViewController: MSMessagesAppViewController, MSStickerBrowserViewD
   }
 
   func createFile(image: UIImage, data: Data?, url: URL) -> URL {
+    print("Writing sticker:", data?.count,  url)
     do {
       
       let type = url.pathExtension
       if (data != nil) {
         try data!.write(to: url)
-      } else if (type == "jpg") {
+      } else if (type == "jpg" || type == "jpeg") {
         try image.jpegData(compressionQuality: 0.7)?.write(to: url)
       } else {
         try image.pngData()?.write(to: url)
@@ -261,22 +265,6 @@ class MessagesViewController: MSMessagesAppViewController, MSStickerBrowserViewD
       
     } catch { fatalError("Unable to create cache URL: \(error)") }
     
-  }
-  
-  func createFile2(image: UIImage) -> URL {
-    let cacheURL: URL
-    let fileManager = FileManager.default
-    let directoryName = UUID().uuidString
-    let tempPath = NSTemporaryDirectory()
-    
-    cacheURL = URL(fileURLWithPath: tempPath).appendingPathComponent(directoryName)
-    do { try fileManager.createDirectory(at: cacheURL, withIntermediateDirectories: true, attributes: nil) } catch { fatalError("Unable to create cache URL: \(error)") }
-    
-    let fileName = "image.png";
-    //    print("Length", image.jpegData(compressionQuality: 0.8)?.count ?? "?")
-    let url = cacheURL.appendingPathComponent(fileName)
-    try! image.pngData()?.write(to: url)
-    return url;
   }
   
   func fit(size: CGSize, dim: CGFloat) -> CGSize {
