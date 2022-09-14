@@ -90,12 +90,14 @@ class MessagesViewController: MSMessagesAppViewController, MSStickerBrowserViewD
       }
       
       var data: Data?
-      if let dataPath = try await itemProvider.loadItem(forTypeIdentifier: type) as? URL {
-        if dataPath.startAccessingSecurityScopedResource() {
-          data = try Data(contentsOf: dataPath)
+      if (image != nil) {
+        if let dataPath = try await itemProvider.loadItem(forTypeIdentifier: type) as? URL {
+          if dataPath.startAccessingSecurityScopedResource() {
+            data = try Data(contentsOf: dataPath)
+          }
         }
       }
-      
+
       var name = itemProvider.suggestedName ?? "Sticker"
 
       if (url != nil) {
@@ -140,18 +142,20 @@ class MessagesViewController: MSMessagesAppViewController, MSStickerBrowserViewD
     
 //  let maxSize: CGFloat = 618
     let manSize: CGFloat = 534
-//  let midSize: CGFloat = 408
+    let midSize: CGFloat = 408
     let minSize: CGFloat = 300
     
     var textImg: UIImage?
     if (image == nil) {
       if let string = string {
-          type = UTType.png.identifier
+        transparent = true
+        type = UTType.png.identifier
         let style = NSMutableParagraphStyle()
         style.alignment = NSTextAlignment.center
         if (string.count <= 3) {
-          let font = UIFont.boldSystemFont(ofSize: manSize)
-          textImg = string.image( withAttributes: [.foregroundColor: UIColor.darkText, .font: font, .paragraphStyle:style], size:CGSize(width:manSize, height:manSize), offsetY: (manSize - font.lineHeight)/2)
+          let fontSize = manSize;
+          let font = UIFont.boldSystemFont(ofSize: fontSize)
+          textImg = string.image( withAttributes: [.foregroundColor: UIColor.darkText, .font: font, .paragraphStyle:style], size:CGSize(width:fontSize, height:fontSize), offsetY: (fontSize - font.lineHeight)/2)
         } else {
           let font = UIFont.boldSystemFont(ofSize: 24)
           textImg = string.image( withAttributes: [.foregroundColor: UIColor.darkText, .font: font, .paragraphStyle:style])
@@ -162,10 +166,6 @@ class MessagesViewController: MSMessagesAppViewController, MSStickerBrowserViewD
     }
     
     guard var img = textImg ?? image else { return }
-    
-
-    
-
 
     let initialSize = img.size;
     
@@ -250,7 +250,7 @@ class MessagesViewController: MSMessagesAppViewController, MSStickerBrowserViewD
   }
 
   func createFile(image: UIImage, data: Data?, url: URL) -> URL {
-    print("Writing sticker:", data?.count,  url)
+    print("Writing sticker:", data, data?.count,  url)
     do {
       
       let type = url.pathExtension
@@ -505,8 +505,11 @@ extension String {
     /// - Returns: a `UIImage` instance from this string using a specified
     /// attributes and size, or `nil` if the operation fails.
   func image(withAttributes attributes: [NSAttributedString.Key: Any]? = nil, size: CGSize? = nil, offsetY: CGFloat = 0.0) -> UIImage? {
+    
         var size = size ?? (self as NSString).size(withAttributes: attributes)
-      return UIGraphicsImageRenderer(size: size).image { ctx in
+    let format = UIGraphicsImageRendererFormat()
+    format.scale = 1.0
+      return UIGraphicsImageRenderer(size: size, format:format).image { ctx in
         size.height *= 2;
         (self as NSString).draw(in: CGRect(origin: CGPoint(x: 0, y: offsetY), size: size), withAttributes: attributes)
 
