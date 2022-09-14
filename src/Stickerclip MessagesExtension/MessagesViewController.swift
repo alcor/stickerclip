@@ -153,11 +153,11 @@ class MessagesViewController: MSMessagesAppViewController, MSStickerBrowserViewD
         let style = NSMutableParagraphStyle()
         style.alignment = NSTextAlignment.center
         if (string.count <= 3) {
-          let fontSize = manSize;
+          let fontSize = 320.0;
           let font = UIFont.boldSystemFont(ofSize: fontSize)
           textImg = string.image( withAttributes: [.foregroundColor: UIColor.darkText, .font: font, .paragraphStyle:style], size:CGSize(width:fontSize, height:fontSize), offsetY: (fontSize - font.lineHeight)/2)
         } else {
-          let font = UIFont.boldSystemFont(ofSize: 24)
+          let font = UIFont.boldSystemFont(ofSize: 160.0)
           textImg = string.image( withAttributes: [.foregroundColor: UIColor.darkText, .font: font, .paragraphStyle:style])
 
         }
@@ -495,27 +495,27 @@ extension CGPoint {
 }
 
 extension String {
-    
-    /// Generates a `UIImage` instance from this string using a specified
-    /// attributes and size.
-    ///
-    /// - Parameters:
-    ///     - attributes: to draw this string with. Default is `nil`.
-    ///     - size: of the image to return.
-    /// - Returns: a `UIImage` instance from this string using a specified
-    /// attributes and size, or `nil` if the operation fails.
+  
+  /// Generates a `UIImage` instance from this string using a specified
+  /// attributes and size.
+  ///
+  /// - Parameters:
+  ///     - attributes: to draw this string with. Default is `nil`.
+  ///     - size: of the image to return.
+  /// - Returns: a `UIImage` instance from this string using a specified
+  /// attributes and size, or `nil` if the operation fails.
   func image(withAttributes attributes: [NSAttributedString.Key: Any]? = nil, size: CGSize? = nil, offsetY: CGFloat = 0.0) -> UIImage? {
     
-        var size = size ?? (self as NSString).size(withAttributes: attributes)
+    var size = size ?? (self as NSString).size(withAttributes: attributes)
     let format = UIGraphicsImageRendererFormat()
     format.scale = 1.0
-      return UIGraphicsImageRenderer(size: size, format:format).image { ctx in
-        size.height *= 2;
-        (self as NSString).draw(in: CGRect(origin: CGPoint(x: 0, y: offsetY), size: size), withAttributes: attributes)
-
-        }
+    return UIGraphicsImageRenderer(size: size, format:format).image { ctx in
+      size.height *= 2;
+      (self as NSString).draw(in: CGRect(origin: CGPoint(x: 0, y: offsetY), size: size), withAttributes: attributes)
+      
     }
-    
+  }
+  
 }
 
 
