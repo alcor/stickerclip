@@ -78,9 +78,9 @@ class MessagesViewController: MSMessagesAppViewController, MSStickerBrowserViewD
     do {
       let itemProvider = itemProviders.first!
       let types = itemProvider.registeredTypeIdentifiers
+      let image = await itemProvider.loadObject(ofClass: UIImage.self) as? UIImage
       let url = await itemProvider.loadObject(ofClass: NSURL.self) as? URL
       let string = await itemProvider.loadObject(ofClass: NSString.self) as? String
-      let image = await itemProvider.loadObject(ofClass: UIImage.self) as? UIImage
       var type = "public.data";
       for t in types {
         if (UTTypeReference(t)?.conforms(to: .image) ?? false) {
@@ -98,12 +98,13 @@ class MessagesViewController: MSMessagesAppViewController, MSStickerBrowserViewD
         }
       }
 
-      var name = itemProvider.suggestedName ?? "Sticker"
+      var name = itemProvider.suggestedName
 
       if (url != nil) {
         name = NSString(string:url!.lastPathComponent).deletingPathExtension
       }
-
+   
+      
       createSticker(image: image, string: string, url: url, basename: name, type: type, data:data)
     } catch {
       print("Unable to create sticker: \(error)")
@@ -127,27 +128,27 @@ class MessagesViewController: MSMessagesAppViewController, MSStickerBrowserViewD
   }
   
   func showInstructions(_ state: Bool = true) {
-    print("Show instructions", state)
     instructionsView.isHidden = !state
     editorView.isHidden = state
   }
   
   func createSticker(image: UIImage?, string: String?, url: URL?, basename: String?, type: String, data: Data?) {
+    
     var type = type;
     var basename = basename
 
-//    print("image \(image) \(string) \(url) \(basename) \(type)")
     var transparent = type == "public.png";
     showInstructions(image == nil && string == nil && url == nil)
     
 //  let maxSize: CGFloat = 618
     let manSize: CGFloat = 534
-    let midSize: CGFloat = 408
+//    let midSize: CGFloat = 408
     let minSize: CGFloat = 300
     
     var textImg: UIImage?
     if (image == nil) {
       if let string = string {
+        print ("Creating image from string", string)
         transparent = true
         type = UTType.png.identifier
         let style = NSMutableParagraphStyle()
@@ -163,13 +164,14 @@ class MessagesViewController: MSMessagesAppViewController, MSStickerBrowserViewD
         }
         basename = String(string.prefix(100)).replacingOccurrences(of: "/", with: "_")
       }
+    } else {
+      print("Creating image with", image)
+
     }
     
     guard var img = textImg ?? image else { return }
 
     let initialSize = img.size;
-    
-//    print("Initial Size:", img.size, img.pngData()!.count,  pb.data(forPasteboardType: type)?.count as Any);
     
     let scale = max(img.size.width, img.size.height) / manSize;
     if (scale > 1.0) {
@@ -195,23 +197,28 @@ class MessagesViewController: MSMessagesAppViewController, MSStickerBrowserViewD
     bytes = (transparent ? img.pngData() : img.jpegData(compressionQuality: 0.7))!.count;
     print("Final Size:  ", img.size, bytes);
     
-    var initialData: Data? = nil
+    var filesize = bytes
+    var originalFileData: Data? = nil
 
     var ext = UTTypeReference(type)?.preferredFilenameExtension ?? "png";
+    
+    // If the size is unchanged, and original file was smaller, use its data.
     if (initialSize == img.size && data != nil && data!.count < maxSize) {
-      initialData = data
+      originalFileData = data
+      filesize = data!.count
     } else {
       ext = transparent ? "png" : "jpg"
     }
 
-    let filename = "\(basename ?? "sticker")\(showBorder ? "-border":"").\(ext)"
+    if (basename == nil || basename == "") { basename = "sticker" }
+    let filename = "\(basename!)\(showBorder ? "-border":"")-\(String(filesize)).\(ext)"
 
     if let oldFile = stickerFile { try? FileManager.default.removeItem(at:oldFile) }
     
     let directory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
     let url = directory.appendingPathComponent(filename)
     
-    stickerFile = createFile(image: img, data:initialData, url:url);
+    stickerFile = createFile(image: img, originalFileData:originalFileData, url:url);
     let sticker = try? MSSticker(contentsOfFileURL: stickerFile!, localizedDescription: "Pasted Sticker");
         
     if ((sticker) != nil) {
@@ -249,13 +256,13 @@ class MessagesViewController: MSMessagesAppViewController, MSStickerBrowserViewD
     }
   }
 
-  func createFile(image: UIImage, data: Data?, url: URL) -> URL {
-    print("Writing sticker:", data, data?.count,  url)
+  func createFile(image: UIImage, originalFileData: Data?, url: URL) -> URL {
+    print("Writing sticker:", image, originalFileData ?? "nodata",  url)
     do {
       
       let type = url.pathExtension
-      if (data != nil) {
-        try data!.write(to: url)
+      if (originalFileData != nil) {
+        try originalFileData!.write(to: url)
       } else if (type == "jpg" || type == "jpeg") {
         try image.jpegData(compressionQuality: 0.7)?.write(to: url)
       } else {
