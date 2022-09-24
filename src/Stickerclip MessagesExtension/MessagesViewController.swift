@@ -2,12 +2,16 @@ import UIKit
 import Messages
 import UniformTypeIdentifiers
 
-class MessagesViewController: MSMessagesAppViewController, MSStickerBrowserViewDataSource {
+class MessagesViewController: MSMessagesAppViewController, MSStickerBrowserViewDataSource, UICollectionViewDataSource, UIGestureRecognizerDelegate {
   @IBOutlet weak var stickerView: MSStickerView!
   @IBOutlet weak var stickerOutlineView: UIImageView!
-  @IBOutlet  var stickerBrowser: MSStickerBrowserView!
+  @IBOutlet var stickerBrowser: MSStickerBrowserView!
+  @IBOutlet var stickerBrowserContainer: UIView!
+  @IBOutlet weak var stickerCollection: UICollectionView!
   @IBOutlet weak var reloadButton: UIButton!
   @IBOutlet weak var historyButton: UIButton!
+  @IBOutlet weak var deleteButton: UIButton!
+  @IBOutlet weak var selectButton: UIButton!
   @IBOutlet weak var instructionsLabel: UITextView!
   @IBOutlet weak var dragHintLabel: UIButton!
   @IBOutlet weak var pasteHintLabel: UIButton!
@@ -17,7 +21,9 @@ class MessagesViewController: MSMessagesAppViewController, MSStickerBrowserViewD
   @IBOutlet weak var editorView: UIView!
   @IBOutlet weak var pasteControl: UIControl!
   
-  var forcePaste = false;
+  var sizes = [618, 516, 408, 300, 192]
+  var size = 408
+  var forcePaste = false
   
   lazy var files: Array<URL> = { return loadSortedFiles() }()
   var stickerFile: URL?
@@ -25,25 +31,28 @@ class MessagesViewController: MSMessagesAppViewController, MSStickerBrowserViewD
   var showBorder: Bool
   var stickers: Array<MSSticker> = []
   var content: UIImage?
-
+  var selectedStickers: Array<String> = []
   required init?(coder: NSCoder) {
     showBorder = (store.object(forKey: "showBorder") != nil) ? store.bool(forKey: "showBorder") : true;
     super.init(coder: coder);
+  }
+  override func awakeFromNib() {
+    stickerCollection.allowsSelection = false;
   }
   
   func loadSortedFiles() -> Array<URL> {
     let paths = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
     guard let directoryURL = URL(string: paths.path) else {return []}
     do {
-       return try
-       FileManager.default.contentsOfDirectory(at: directoryURL,
-              includingPropertiesForKeys:[.contentModificationDateKey],
-              options: [.skipsHiddenFiles, .skipsSubdirectoryDescendants])
-           .sorted(by: {
-               let date0 = try $0.promisedItemResourceValues(forKeys:[.contentModificationDateKey]).contentModificationDate!
-               let date1 = try $1.promisedItemResourceValues(forKeys:[.contentModificationDateKey]).contentModificationDate!
-               return date0.compare(date1) == .orderedDescending
-            })
+      return try
+      FileManager.default.contentsOfDirectory(at: directoryURL,
+                                              includingPropertiesForKeys:[.contentModificationDateKey],
+                                              options: [.skipsHiddenFiles, .skipsSubdirectoryDescendants])
+      .sorted(by: {
+        let date0 = try $0.promisedItemResourceValues(forKeys:[.contentModificationDateKey]).contentModificationDate!
+        let date1 = try $1.promisedItemResourceValues(forKeys:[.contentModificationDateKey]).contentModificationDate!
+        return date0.compare(date1) == .orderedDescending
+      })
     } catch {
       print (error)
       showInstructions(true)
@@ -54,11 +63,76 @@ class MessagesViewController: MSMessagesAppViewController, MSStickerBrowserViewD
   func numberOfStickers(in stickerBrowserView: MSStickerBrowserView) -> Int {
     return files.count;
   }
-
+  
   func stickerBrowserView(_ stickerBrowserView: MSStickerBrowserView, stickerAt index: Int) -> MSSticker {
     let url = files[index];
     let sticker =  try! MSSticker(contentsOfFileURL: url, localizedDescription: "Pasted Sticker")
     return sticker;
+  }
+  
+  func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
+    return files.count
+  }
+  
+  
+  func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
+    let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "Sticker", for: indexPath)
+    let stickerView = cell.contentView as? MSStickerView
+    
+    let url = files[indexPath.item % files.count];
+    let sticker =  try! MSSticker(contentsOfFileURL: url, localizedDescription: "Pasted Sticker")
+    
+    if cell.isSelected == true {
+      cell.backgroundColor = .green
+    }
+    stickerView?.startAnimating()
+    stickerView?.sticker = sticker
+    
+    let selected = selectedStickers.contains(url.absoluteString);
+    if (stickerCollection.allowsSelection) {
+      let stickerViewTapGesture = UITapGestureRecognizer(target: self, action: #selector(stickerCellSelection))
+      stickerViewTapGesture.name = url.absoluteString
+      stickerViewTapGesture.delegate = self
+      stickerView?.addGestureRecognizer(stickerViewTapGesture)
+    } else {
+    }
+    if (selected) {
+      cell.backgroundColor = .systemRed
+      cell.layer.cornerRadius = 10
+    } else {
+      cell.backgroundColor = .clear
+    }
+    
+    
+    cell.isSelected = selected;
+    return cell
+  }
+  
+  @objc func stickerCellSelection(recognizer: UITapGestureRecognizer) {
+    let path = stickerCollection.indexPath(for: recognizer.view!.superview as! UICollectionViewCell)
+    
+    if let name = recognizer.name {
+      print("Selected Sticker:  \(name)")
+      if let index = selectedStickers.firstIndex(of: name) {
+        selectedStickers.remove(at: index)
+      } else {
+        selectedStickers.append(name)
+      }
+      stickerCollection.selectItem(at: path, animated: true, scrollPosition: .top)
+      stickerCollection.reloadData()
+      
+    }
+  }
+  func collectionView(_ collectionView: UICollectionView,
+                      layout collectionViewLayout: UICollectionViewLayout,
+                      sizeForItemAt indexPath: IndexPath) -> CGSize {
+    // your code here
+    return CGSize(width: 10, height: 10)
+  }
+  
+  func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer,
+                         shouldRecognizeSimultaneouslyWith otherGestureRecognizer: UIGestureRecognizer) -> Bool {
+    return false
   }
   
   override func canPaste(_ itemProviders: [NSItemProvider]) -> Bool {
@@ -75,6 +149,10 @@ class MessagesViewController: MSMessagesAppViewController, MSStickerBrowserViewD
   }
   
   func createFrom(itemProviders: [NSItemProvider]) async {
+    if (itemProviders.count == 0) {
+      showInstructions(true)
+      return
+    }
     do {
       let itemProvider = itemProviders.first!
       let types = itemProvider.registeredTypeIdentifiers
@@ -97,13 +175,13 @@ class MessagesViewController: MSMessagesAppViewController, MSStickerBrowserViewD
           }
         }
       }
-
+      
       var name = itemProvider.suggestedName
-
+      
       if (url != nil) {
         name = NSString(string:url!.lastPathComponent).deletingPathExtension
       }
-   
+      
       
       createSticker(image: image, string: string, url: url, basename: name, type: type, data:data)
     } catch {
@@ -111,38 +189,34 @@ class MessagesViewController: MSMessagesAppViewController, MSStickerBrowserViewD
       
     }
   }
-
+  
   func createStickerFromPasteboard() {
     let pb = UIPasteboard.general;
     Task {
       await createFrom(itemProviders:pb.itemProviders)
     }
     return;
-//    var basename = String(pb.changeCount);
-//    var transparent = pb.contains(pasteboardTypes: ["public.png", "public.gif"])
-//    let types = pb.types
-//    let string = pb.string
-//    let url = pb.url
-//    let image = pb.image
-//    createSticker(image: image, string:string, url:url, basename:basename, types:types)
   }
   
   func showInstructions(_ state: Bool = true) {
-    instructionsView.isHidden = !state
-    editorView.isHidden = state
+    if (state) {
+      self.view = instructionsView
+    } else {
+      self.view = editorView
+    }
   }
   
   func createSticker(image: UIImage?, string: String?, url: URL?, basename: String?, type: String, data: Data?) {
     
     var type = type;
     var basename = basename
-
+    
     var transparent = type == "public.png";
     showInstructions(image == nil && string == nil && url == nil)
     
-//  let maxSize: CGFloat = 618
+    //  let maxSize: CGFloat = 618
     let manSize: CGFloat = 534
-//    let midSize: CGFloat = 408
+    //    let midSize: CGFloat = 408
     let minSize: CGFloat = 300
     
     var textImg: UIImage?
@@ -160,17 +234,17 @@ class MessagesViewController: MSMessagesAppViewController, MSStickerBrowserViewD
         } else {
           let font = UIFont.boldSystemFont(ofSize: 160.0)
           textImg = string.image( withAttributes: [.foregroundColor: UIColor.darkText, .font: font, .paragraphStyle:style])
-
+          
         }
         basename = String(string.prefix(100)).replacingOccurrences(of: "/", with: "_")
       }
     } else {
-      print("Creating image with", image)
-
+      print("Creating image with", image as Any)
+      
     }
     
     guard var img = textImg ?? image else { return }
-
+    
     let initialSize = img.size;
     
     let scale = max(img.size.width, img.size.height) / manSize;
@@ -179,7 +253,7 @@ class MessagesViewController: MSMessagesAppViewController, MSStickerBrowserViewD
       img = img.resized(to: size)
     }
     print("Cropped Size:", img.size, img.pngData()!.count);
-  
+    
     if (showBorder) {
       transparent = true;
       let distance = max(img.size.width, img.size.height) / 20;
@@ -193,13 +267,13 @@ class MessagesViewController: MSMessagesAppViewController, MSStickerBrowserViewD
       let size = fit(size:img.size, dim: minSize)
       img = img.resized(to: size)
     }
-
+    
     bytes = (transparent ? img.pngData() : img.jpegData(compressionQuality: 0.7))!.count;
     print("Final Size:  ", img.size, bytes);
     
     var filesize = bytes
     var originalFileData: Data? = nil
-
+    
     var ext = UTTypeReference(type)?.preferredFilenameExtension ?? "png";
     
     // If the size is unchanged, and original file was smaller, use its data.
@@ -209,10 +283,10 @@ class MessagesViewController: MSMessagesAppViewController, MSStickerBrowserViewD
     } else {
       ext = transparent ? "png" : "jpg"
     }
-
+    
     if (basename == nil || basename == "") { basename = "sticker" }
     let filename = "\(basename!)\(showBorder ? "-border":"")-\(String(filesize)).\(ext)"
-
+    
     if let oldFile = stickerFile { try? FileManager.default.removeItem(at:oldFile) }
     
     let directory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
@@ -220,7 +294,7 @@ class MessagesViewController: MSMessagesAppViewController, MSStickerBrowserViewD
     
     stickerFile = createFile(image: img, originalFileData:originalFileData, url:url);
     let sticker = try? MSSticker(contentsOfFileURL: stickerFile!, localizedDescription: "Pasted Sticker");
-        
+    
     if ((sticker) != nil) {
       stickerView.sticker = sticker
       stickerView.isHidden = false
@@ -255,7 +329,7 @@ class MessagesViewController: MSMessagesAppViewController, MSStickerBrowserViewD
       }
     }
   }
-
+  
   func createFile(image: UIImage, originalFileData: Data?, url: URL) -> URL {
     print("Writing sticker:", image, originalFileData ?? "nodata",  url)
     do {
@@ -283,28 +357,49 @@ class MessagesViewController: MSMessagesAppViewController, MSStickerBrowserViewD
     forcePaste = true
     createStickerFromPasteboard();
   }
-    
+  
+  @IBAction func selectStickers(_ sender: UIButton) {
+    stickerCollection.allowsSelection = !stickerCollection.allowsSelection;
+    stickerCollection.allowsMultipleSelection = stickerCollection.allowsSelection
+    stickerCollection.reloadData();
+    selectButton.isSelected = stickerCollection.allowsSelection
+    deleteButton.isHidden = !stickerCollection.allowsSelection
+  }
+  
+  @IBAction func deleteStickers(_ sender: UIButton) {
+    print("Deleting \(selectedStickers)")
+    selectedStickers.forEach { fileURL in
+      if let url = URL(string: fileURL) {
+        try? FileManager.default.removeItem(at: url)
+        
+      }
+    }
+    selectStickers(deleteButton)
+    selectedStickers = []
+    files = loadSortedFiles()
+    stickerCollection.reloadData()
+  }
+  
+  func getDocumentsDirectory() -> URL { // returns your application folder
+    let paths = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
+    let documentsDirectory = paths[0]
+    return documentsDirectory
+  }
+  
+  @IBAction func showRecents(_ sender: UIButton) {
+    self.requestPresentationStyle(.expanded)
+  }
+  
   @IBAction func setSize(_ sender: UIButton) {
-    let size = sender.tag;
-    let d = (CGFloat(size) - stickerView.frame.size.width) / 2
+    let dir = sender.tag * -1
+    var i = sizes.firstIndex(of: size) ?? 2
+    i += dir
+    i = min(sizes.count - 1, max(0, i))
+    size = sizes[i]
+    print("Adjusting size to \(size)")
+    let ptSize = size / 3
+    let d = (CGFloat(ptSize) - stickerView.frame.size.width) / 2
     self.stickerView.frame = self.stickerView.frame.insetBy(dx: -d, dy: -d)
-    //self.stickerOutlineView.frame = self.stickerOutlineView.frame.insetBy(dx: -d, dy: -d)
-      
-//      let shapeLayer:CAShapeLayer = CAShapeLayer()
-//      let frameSize = self.stickerOutlineView.frame.size
-//      let shapeRect = CGRect(x: 0, y: 0, width: frameSize.width, height: frameSize.height)
-//
-//      shapeLayer.bounds = shapeRect.inset(by: .init(top: 16 , left: 8, bottom: 16, right: 8))
-//      shapeLayer.position = CGPoint(x: frameSize.width/2, y: frameSize.height/2)
-//      shapeLayer.fillColor = UIColor.clear.cgColor
-//      shapeLayer.strokeColor = UIColor.red.cgColor
-//      shapeLayer.lineWidth = 3
-//      shapeLayer.lineJoin = CAShapeLayerLineJoin.round
-//      shapeLayer.lineDashPattern = [6,3]
-//      shapeLayer.path = UIBezierPath(roundedRect: shapeRect, cornerRadius: 24).cgPath
-//
-//      self.stickerOutlineView.layer.sublayers?.removeAll()
-//      self.stickerOutlineView.layer.addSublayer(shapeLayer)
   }
   
   @IBAction func toggleBorder(_ sender: UIButton) {
@@ -314,28 +409,27 @@ class MessagesViewController: MSMessagesAppViewController, MSStickerBrowserViewD
     createStickerFromPasteboard();
   }
   
-//  override func didResignActive(with conversation: MSConversation) {}
+  //  override func didResignActive(with conversation: MSConversation) {}
   
-//  override func didReceive(_ message: MSMessage, conversation: MSConversation) {}
+  //  override func didReceive(_ message: MSMessage, conversation: MSConversation) {}
   
-//  override func didStartSending(_ message: MSMessage, conversation: MSConversation) {}
-
-//  override func didCancelSending(_ message: MSMessage, conversation: MSConversation) {}
+  //  override func didStartSending(_ message: MSMessage, conversation: MSConversation) {}
+  
+  //  override func didCancelSending(_ message: MSMessage, conversation: MSConversation) {}
   
   override func willTransition(to presentationStyle: MSMessagesAppPresentationStyle) {
     if (presentationStyle == .expanded) {
-      stickerBrowser.isHidden = false
-      containerView.isHidden = true
-      stickerBrowser.dataSource = self
-      stickerBrowser.reloadData();
+      self.view = stickerBrowserContainer
+      stickerBrowserContainer.isHidden = false
+      stickerCollection.dataSource = self
+      stickerCollection.reloadData();
     } else {
-      stickerBrowser.isHidden = true
-      containerView.isHidden = false
+      self.view = editorView;
+      stickerBrowserContainer.isHidden = true
     }
-    print(presentationStyle);
   }
   
-//  override func didTransition(to presentationStyle: MSMessagesAppPresentationStyle) {}
+  //  override func didTransition(to presentationStyle: MSMessagesAppPresentationStyle) {}
   
 }
 
@@ -386,119 +480,119 @@ extension UIImage {
     
     UIGraphicsEndImageContext()
     return image
+  }
+  
+  /**
+   Returns the flat colorized version of the image, or self when something was wrong
+   
+   - Parameters:
+   - color: The colors to user. By defaut, uses the ``UIColor.white`
+   
+   - Returns: the flat colorized version of the image, or the self if something was wrong
+   */
+  func colorized(with color: UIColor = .white) -> UIImage {
+    UIGraphicsBeginImageContextWithOptions(size, false, scale)
+    
+    defer {
+      UIGraphicsEndImageContext()
     }
-
-    /**
-    Returns the flat colorized version of the image, or self when something was wrong
-
-    - Parameters:
-        - color: The colors to user. By defaut, uses the ``UIColor.white`
-
-    - Returns: the flat colorized version of the image, or the self if something was wrong
-    */
-    func colorized(with color: UIColor = .white) -> UIImage {
-        UIGraphicsBeginImageContextWithOptions(size, false, scale)
-
-        defer {
-            UIGraphicsEndImageContext()
-        }
-
-        guard let context = UIGraphicsGetCurrentContext(), let cgImage = cgImage else { return self }
-
-
-        let rect = CGRect(x: 0, y: 0, width: size.width, height: size.height)
-
-        color.setFill()
-        context.translateBy(x: 0, y: size.height)
-        context.scaleBy(x: 1.0, y: -1.0)
-        context.clip(to: rect, mask: cgImage)
-        context.fill(rect)
-
-        guard let colored = UIGraphicsGetImageFromCurrentImageContext() else { return self }
-
-        return colored
+    
+    guard let context = UIGraphicsGetCurrentContext(), let cgImage = cgImage else { return self }
+    
+    
+    let rect = CGRect(x: 0, y: 0, width: size.width, height: size.height)
+    
+    color.setFill()
+    context.translateBy(x: 0, y: size.height)
+    context.scaleBy(x: 1.0, y: -1.0)
+    context.clip(to: rect, mask: cgImage)
+    context.fill(rect)
+    
+    guard let colored = UIGraphicsGetImageFromCurrentImageContext() else { return self }
+    
+    return colored
+  }
+  
+  /**
+   Returns the stroked version of the fransparent image with the given stroke color and the thickness.
+   
+   - Parameters:
+   - color: The colors to user. By defaut, uses the ``UIColor.white`
+   - thickness: the thickness of the border. Default to `2`
+   - quality: The number of degrees (out of 360): the smaller the best, but the slower. Defaults to `10`.
+   
+   - Returns: the stroked version of the image, or self if something was wrong
+   */
+  
+  func stroked(with color: UIColor = .white, thickness: CGFloat = 2, quality: CGFloat = 10) -> UIImage {
+    
+    guard let cgImage = cgImage else { return self }
+    
+    // Colorize the stroke image to reflect border color
+    let strokeImage = colorized(with: color)
+    
+    guard let strokeCGImage = strokeImage.cgImage else { return self }
+    
+    /// Rendering quality of the stroke
+    let step = quality == 0 ? 10 : abs(quality)
+    
+    let oldRect = CGRect(x: thickness, y: thickness, width: size.width, height: size.height).integral
+    let newSize = CGSize(width: size.width + 2 * thickness, height: size.height + 2 * thickness)
+    let translationVector = CGPoint(x: thickness, y: 0)
+    
+    
+    UIGraphicsBeginImageContextWithOptions(newSize, false, scale)
+    
+    guard let context = UIGraphicsGetCurrentContext() else { return self }
+    
+    defer {
+      UIGraphicsEndImageContext()
     }
-
-    /**
-    Returns the stroked version of the fransparent image with the given stroke color and the thickness.
-
-    - Parameters:
-        - color: The colors to user. By defaut, uses the ``UIColor.white`
-        - thickness: the thickness of the border. Default to `2`
-        - quality: The number of degrees (out of 360): the smaller the best, but the slower. Defaults to `10`.
-
-    - Returns: the stroked version of the image, or self if something was wrong
-    */
-
-    func stroked(with color: UIColor = .white, thickness: CGFloat = 2, quality: CGFloat = 10) -> UIImage {
-
-        guard let cgImage = cgImage else { return self }
-
-        // Colorize the stroke image to reflect border color
-        let strokeImage = colorized(with: color)
-
-        guard let strokeCGImage = strokeImage.cgImage else { return self }
-
-        /// Rendering quality of the stroke
-        let step = quality == 0 ? 10 : abs(quality)
-
-        let oldRect = CGRect(x: thickness, y: thickness, width: size.width, height: size.height).integral
-        let newSize = CGSize(width: size.width + 2 * thickness, height: size.height + 2 * thickness)
-        let translationVector = CGPoint(x: thickness, y: 0)
-
-
-        UIGraphicsBeginImageContextWithOptions(newSize, false, scale)
-
-        guard let context = UIGraphicsGetCurrentContext() else { return self }
-
-        defer {
-            UIGraphicsEndImageContext()
-        }
-        context.translateBy(x: 0, y: newSize.height)
-        context.scaleBy(x: 1.0, y: -1.0)
-        context.interpolationQuality = .high
-
-        for angle: CGFloat in stride(from: 0, to: 360, by: step) {
-            let vector = translationVector.rotated(around: .zero, byDegrees: angle)
-            let transform = CGAffineTransform(translationX: vector.x, y: vector.y)
-
-            context.concatenate(transform)
-
-            context.draw(strokeCGImage, in: oldRect)
-
-            let resetTransform = CGAffineTransform(translationX: -vector.x, y: -vector.y)
-            context.concatenate(resetTransform)
-        }
-
-        context.draw(cgImage, in: oldRect)
-
-        guard let stroked = UIGraphicsGetImageFromCurrentImageContext() else { return self }
-
-        return stroked
+    context.translateBy(x: 0, y: newSize.height)
+    context.scaleBy(x: 1.0, y: -1.0)
+    context.interpolationQuality = .high
+    
+    for angle: CGFloat in stride(from: 0, to: 360, by: step) {
+      let vector = translationVector.rotated(around: .zero, byDegrees: angle)
+      let transform = CGAffineTransform(translationX: vector.x, y: vector.y)
+      
+      context.concatenate(transform)
+      
+      context.draw(strokeCGImage, in: oldRect)
+      
+      let resetTransform = CGAffineTransform(translationX: -vector.x, y: -vector.y)
+      context.concatenate(resetTransform)
     }
+    
+    context.draw(cgImage, in: oldRect)
+    
+    guard let stroked = UIGraphicsGetImageFromCurrentImageContext() else { return self }
+    
+    return stroked
+  }
 }
 
 
 extension CGPoint {
-    /**
-    Rotates the point from the center `origin` by `byDegrees` degrees along the Z axis.
-
-    - Parameters:
-        - origin: The center of he rotation;
-        - byDegrees: Amount of degrees to rotate around the Z axis.
-
-    - Returns: The rotated point.
-    */
-    func rotated(around origin: CGPoint, byDegrees: CGFloat) -> CGPoint {
-        let dx = x - origin.x
-        let dy = y - origin.y
-        let radius = sqrt(dx * dx + dy * dy)
-        let azimuth = atan2(dy, dx) // in radians
-        let newAzimuth = azimuth + byDegrees * .pi / 180.0 // to radians
-        let x = origin.x + radius * cos(newAzimuth)
-        let y = origin.y + radius * sin(newAzimuth)
-        return CGPoint(x: x, y: y)
-    }
+  /**
+   Rotates the point from the center `origin` by `byDegrees` degrees along the Z axis.
+   
+   - Parameters:
+   - origin: The center of he rotation;
+   - byDegrees: Amount of degrees to rotate around the Z axis.
+   
+   - Returns: The rotated point.
+   */
+  func rotated(around origin: CGPoint, byDegrees: CGFloat) -> CGPoint {
+    let dx = x - origin.x
+    let dy = y - origin.y
+    let radius = sqrt(dx * dx + dy * dy)
+    let azimuth = atan2(dy, dx) // in radians
+    let newAzimuth = azimuth + byDegrees * .pi / 180.0 // to radians
+    let x = origin.x + radius * cos(newAzimuth)
+    let y = origin.y + radius * sin(newAzimuth)
+    return CGPoint(x: x, y: y)
+  }
 }
 
 extension String {
@@ -528,13 +622,13 @@ extension String {
 
 
 extension NSItemProvider {
-
+  
   func loadObject(ofClass aClass: NSItemProviderReading.Type) async -> NSItemProviderReading? {
     guard self.canLoadObject(ofClass: aClass) else { return nil }
     
     return await withCheckedContinuation({ continuation in
       self.loadObject(ofClass: aClass, completionHandler: { (data, error) in
-//        print("Returning \(data), error=\(error)")
+        //        print("Returning \(data), error=\(error)")
         continuation.resume(returning: data)
       })
     })
