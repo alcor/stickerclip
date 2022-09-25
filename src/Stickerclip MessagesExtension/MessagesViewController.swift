@@ -17,11 +17,12 @@ class MessagesViewController: MSMessagesAppViewController, MSStickerBrowserViewD
   @IBOutlet weak var pasteHintLabel: UIButton!
   @IBOutlet weak var containerView: UIView!
   @IBOutlet weak var toolbarView: UIView!
+  @IBOutlet weak var editToolbarView: UIView!
   @IBOutlet weak var instructionsView: UIView!
   @IBOutlet weak var editorView: UIView!
   @IBOutlet weak var pasteControl: UIControl!
   
-  var sizes = [618, 516, 408, 300, 192]
+  var sizes = [516, 408, 300, 192]
   var size = 408
   var forcePaste = false
   
@@ -36,6 +37,7 @@ class MessagesViewController: MSMessagesAppViewController, MSStickerBrowserViewD
   var content: UIImage?
   var selectedStickers: Array<String> = []
   var token = FileManager.default.ubiquityIdentityToken
+  var showInstructions = false
   required init?(coder: NSCoder) {
     showBorder = (store.object(forKey: "showBorder") != nil) ? store.bool(forKey: "showBorder") : true;
     super.init(coder: coder);
@@ -44,6 +46,8 @@ class MessagesViewController: MSMessagesAppViewController, MSStickerBrowserViewD
       migrateOldFiles()
       forceCloudSync()
     }
+    
+    files = loadSortedFiles()
   }
   override func awakeFromNib() {
     stickerCollection.allowsSelection = false;
@@ -87,16 +91,25 @@ class MessagesViewController: MSMessagesAppViewController, MSStickerBrowserViewD
     return files.count
   }
   
+  
   func collectionView(_ collectionView: UICollectionView, viewForSupplementaryElementOfKind kind: String, at indexPath: IndexPath) -> UICollectionReusableView {
-    print("kind",kind)
+
     if (kind == UICollectionView.elementKindSectionHeader) {
       let header = collectionView.dequeueReusableSupplementaryView(ofKind: UICollectionView.elementKindSectionHeader, withReuseIdentifier: "Header", for: indexPath);
-      header.addSubview(editorView)
+      if (showInstructions) {
+        header.frame = instructionsView.frame
+        instructionsView.frame = header.bounds
+        header.addSubview(instructionsView)
+      } else {
+        editorView.frame = header.bounds
+        header.addSubview(editorView)
+      }
       
       return header
     }
-      let footer = collectionView.dequeueReusableSupplementaryView(ofKind: UICollectionView.elementKindSectionFooter, withReuseIdentifier: "Footer", for: indexPath);
-      return footer
+    
+    let footer = collectionView.dequeueReusableSupplementaryView(ofKind: UICollectionView.elementKindSectionFooter, withReuseIdentifier: "Footer", for: indexPath);
+    return footer
     
   }
   func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
@@ -174,12 +187,7 @@ class MessagesViewController: MSMessagesAppViewController, MSStickerBrowserViewD
     try? url.setResourceValues(resourceValues)
   }
   
-  func collectionView(_ collectionView: UICollectionView,
-                      layout collectionViewLayout: UICollectionViewLayout,
-                      sizeForItemAt indexPath: IndexPath) -> CGSize {
-    // your code here
-    return CGSize(width: 10, height: 10)
-  }
+
   
   func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer,
                          shouldRecognizeSimultaneouslyWith otherGestureRecognizer: UIGestureRecognizer) -> Bool {
@@ -255,11 +263,14 @@ class MessagesViewController: MSMessagesAppViewController, MSStickerBrowserViewD
   }
   
   func showInstructions(_ state: Bool = true) {
-    if (state) {
-      self.view = stickerBrowserContainer
-    } else {
-      self.view = stickerBrowserContainer
-    }
+    showInstructions = state
+    stickerCollection.reloadData();
+    self.view = stickerBrowserContainer
+//    if (state) {
+//
+//    } else {
+//      self.view = stickerBrowserContainer
+//    }
   }
   
   func createSticker(image: UIImage?, string: String?, url: URL?, basename: String?, type: String, data: Data?) {
@@ -572,14 +583,14 @@ class MessagesViewController: MSMessagesAppViewController, MSStickerBrowserViewD
   //  override func didCancelSending(_ message: MSMessage, conversation: MSConversation) {}
   
   override func willTransition(to presentationStyle: MSMessagesAppPresentationStyle) {
-    if (presentationStyle == .expanded) {
       self.view = stickerBrowserContainer
       stickerBrowserContainer.isHidden = false
       stickerCollection.dataSource = self
       stickerCollection.reloadData();
+    if (presentationStyle == .expanded) {
+      editToolbarView.isHidden = false
     } else {
-      self.view = stickerBrowserContainer;
-      stickerBrowserContainer.isHidden = false
+      editToolbarView.isHidden = true
     }
   }
   
