@@ -35,12 +35,15 @@ class MessagesViewController: MSMessagesAppViewController, MSStickerBrowserViewD
   var stickers: Array<MSSticker> = []
   var content: UIImage?
   var selectedStickers: Array<String> = []
+  var token = FileManager.default.ubiquityIdentityToken
   required init?(coder: NSCoder) {
     showBorder = (store.object(forKey: "showBorder") != nil) ? store.bool(forKey: "showBorder") : true;
     super.init(coder: coder);
     
-    migrateOldFiles()
-    forceCloudSync()
+    if (token != nil) {
+      migrateOldFiles()
+      forceCloudSync()
+    }
   }
   override func awakeFromNib() {
     stickerCollection.allowsSelection = false;
@@ -84,7 +87,18 @@ class MessagesViewController: MSMessagesAppViewController, MSStickerBrowserViewD
     return files.count
   }
   
-  
+  func collectionView(_ collectionView: UICollectionView, viewForSupplementaryElementOfKind kind: String, at indexPath: IndexPath) -> UICollectionReusableView {
+    print("kind",kind)
+    if (kind == UICollectionView.elementKindSectionHeader) {
+      let header = collectionView.dequeueReusableSupplementaryView(ofKind: UICollectionView.elementKindSectionHeader, withReuseIdentifier: "Header", for: indexPath);
+      header.addSubview(editorView)
+      
+      return header
+    }
+      let footer = collectionView.dequeueReusableSupplementaryView(ofKind: UICollectionView.elementKindSectionFooter, withReuseIdentifier: "Footer", for: indexPath);
+      return footer
+    
+  }
   func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
     let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "Sticker", for: indexPath)
     let stickerView = cell.contentView as? MSStickerView
@@ -242,9 +256,9 @@ class MessagesViewController: MSMessagesAppViewController, MSStickerBrowserViewD
   
   func showInstructions(_ state: Bool = true) {
     if (state) {
-      self.view = instructionsView
+      self.view = stickerBrowserContainer
     } else {
-      self.view = editorView
+      self.view = stickerBrowserContainer
     }
   }
   
@@ -517,7 +531,12 @@ class MessagesViewController: MSMessagesAppViewController, MSStickerBrowserViewD
   }
   
   func getDocumentsDirectory() -> URL { // returns your iCloud or local documents folder
-    let documentsDirectory = FileManager.default.url(forUbiquityContainerIdentifier: nil)?.appendingPathComponent("Documents") ?? FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+    var documentsDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+    if (token != nil) {
+      if let cloudDirectory = FileManager.default.url(forUbiquityContainerIdentifier: nil)?.appendingPathComponent("Documents") {
+        documentsDirectory = cloudDirectory
+      }
+    }
     return documentsDirectory
   }
   
@@ -559,8 +578,8 @@ class MessagesViewController: MSMessagesAppViewController, MSStickerBrowserViewD
       stickerCollection.dataSource = self
       stickerCollection.reloadData();
     } else {
-      self.view = editorView;
-      stickerBrowserContainer.isHidden = true
+      self.view = stickerBrowserContainer;
+      stickerBrowserContainer.isHidden = false
     }
   }
   
