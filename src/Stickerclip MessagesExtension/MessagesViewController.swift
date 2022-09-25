@@ -25,7 +25,10 @@ class MessagesViewController: MSMessagesAppViewController, MSStickerBrowserViewD
   var size = 408
   var forcePaste = false
   
-  lazy var files: Array<URL> = { return loadSortedFiles() }()
+  lazy var files: Array<URL> = {
+    let files = loadSortedFiles()
+    return files
+  }()
   var stickerFile: URL?
   let store = UserDefaults.standard
   var showBorder: Bool
@@ -57,9 +60,11 @@ class MessagesViewController: MSMessagesAppViewController, MSStickerBrowserViewD
         let date1 = try $1.promisedItemResourceValues(forKeys:[.contentModificationDateKey]).contentModificationDate!
         return date0.compare(date1) == .orderedDescending
       })
+      
+      print("Loaded \(files.count) stickers") //, files.map({ url in url.lastPathComponent }).joined(separator:"\n"))
       return files;
     } catch {
-      print (error)
+      print ("ERROR:", error)
       showInstructions(true)
     }
     return [];
@@ -94,13 +99,18 @@ class MessagesViewController: MSMessagesAppViewController, MSStickerBrowserViewD
     stickerView?.sticker = sticker
     
     let selected = selectedStickers.contains(url.absoluteString);
-    if (stickerCollection.allowsSelection) {
-      let stickerViewTapGesture = UITapGestureRecognizer(target: self, action: #selector(stickerCellSelection))
-      stickerViewTapGesture.name = url.absoluteString
-      stickerViewTapGesture.delegate = self
-      stickerView?.addGestureRecognizer(stickerViewTapGesture)
-    } else {
-    }
+
+    let stickerViewTapGesture = UITapGestureRecognizer(target: self, action: #selector(stickerCellSelection))
+    stickerViewTapGesture.name = url.absoluteString
+    stickerViewTapGesture.delegate = self
+    stickerView?.addGestureRecognizer(stickerViewTapGesture)
+    
+    let stickerViewHoldGesture = UILongPressGestureRecognizer(target: self, action: #selector(stickerCellPeel))
+    stickerViewHoldGesture.name = url.absoluteString
+    stickerViewHoldGesture.delegate = self
+    stickerViewHoldGesture.minimumPressDuration = 0.2;
+    stickerView?.addGestureRecognizer(stickerViewHoldGesture)
+    
     if (selected) {
       cell.backgroundColor = .systemRed
       cell.layer.cornerRadius = 10
@@ -114,6 +124,12 @@ class MessagesViewController: MSMessagesAppViewController, MSStickerBrowserViewD
   }
   
   @objc func stickerCellSelection(recognizer: UITapGestureRecognizer) {
+
+    if (!stickerCollection.allowsSelection) {
+      touchSticker(recognizer.name)
+      return
+    };
+    
     let path = stickerCollection.indexPath(for: recognizer.view!.superview as! UICollectionViewCell)
     
     if let name = recognizer.name {
@@ -128,6 +144,22 @@ class MessagesViewController: MSMessagesAppViewController, MSStickerBrowserViewD
       
     }
   }
+  
+  @objc func stickerCellPeel(recognizer: UILongPressGestureRecognizer) {
+    if ( recognizer.state == .began) {
+      touchSticker(recognizer.name)
+    }
+  }
+  
+  func touchSticker(_ name: String?) {
+    guard let urlString = name else { return }
+    guard var url = URL(string:urlString) else { return }
+    print("Touching Sticker:  \(url.lastPathComponent)")
+    var resourceValues = URLResourceValues()
+    resourceValues.contentModificationDate = Date()
+    try? url.setResourceValues(resourceValues)
+  }
+  
   func collectionView(_ collectionView: UICollectionView,
                       layout collectionViewLayout: UICollectionViewLayout,
                       sizeForItemAt indexPath: IndexPath) -> CGSize {
@@ -137,7 +169,12 @@ class MessagesViewController: MSMessagesAppViewController, MSStickerBrowserViewD
   
   func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer,
                          shouldRecognizeSimultaneouslyWith otherGestureRecognizer: UIGestureRecognizer) -> Bool {
-    return false
+    
+    if (gestureRecognizer is UITapGestureRecognizer) {
+      return !stickerCollection.allowsSelection
+    } else {
+      return true;
+    }
   }
   
   override func canPaste(_ itemProviders: [NSItemProvider]) -> Bool {
@@ -385,23 +422,67 @@ class MessagesViewController: MSMessagesAppViewController, MSStickerBrowserViewD
     selectStickers(deleteButton)
     selectedStickers = []
     files = loadSortedFiles()
-    print("files", files)
     stickerCollection.reloadData()
   }
   
   func forceCloudSync() {
     print("Syncing Cloud")
+    
     let metadataQuery = NSMetadataQuery()
     metadataQuery.notificationBatchingInterval = 1
-    metadataQuery.searchScopes = [NSMetadataQueryUbiquitousDataScope, NSMetadataQueryUbiquitousDocumentsScope]
-    metadataQuery.predicate = NSPredicate(format: "NSMetadataItemFSNameKey == '*'")
+    metadataQuery.searchScopes = [NSMetadataQueryUbiquitousDocumentsScope]
+    metadataQuery.predicate = NSPredicate(format: "%K LIKE '*'", NSMetadataItemFSNameKey)
     
     NotificationCenter.default.addObserver(forName: NSNotification.Name.NSMetadataQueryDidUpdate, object: nil, queue: .main) { notif in
-      print("notif", notif, metadataQuery.results);
+      metadataQuery.disableUpdates()
+//      print("Notif", notif, notif.userInfo);
+       let changedMetadataItems = notif.userInfo?[NSMetadataQueryUpdateChangedItemsKey] as? [NSMetadataItem]
+       let removedMetadataItems = notif.userInfo?[NSMetadataQueryUpdateRemovedItemsKey] as? [NSMetadataItem]
+       let addedMetadataItems = notif.userInfo?[NSMetadataQueryUpdateAddedItemsKey] as? [NSMetadataItem]
+      
+//      print("Updated", addedMetadataItems, removedMetadataItems, changedMetadataItems)
+
+      for result in addedMetadataItems! {
+        if let item = result as? NSMetadataItem {
+          print("Added", result)
+          guard let url = item.value(forAttribute: NSMetadataItemURLKey) as? URL else { continue }
+          self.files = self.loadSortedFiles()
+          self.stickerCollection.reloadData();
+        }
+      }
+      for result in removedMetadataItems! {
+        if let item = result as? NSMetadataItem {
+          print("Added", result)
+          guard let url = item.value(forAttribute: NSMetadataItemURLKey) as? URL else { continue }
+          
+          self.files = self.loadSortedFiles()
+          self.stickerCollection.reloadData();
+        }
+      }
+      metadataQuery.enableUpdates()
+
     }
-    metadataQuery.sortDescriptors = [NSSortDescriptor(key: NSMetadataItemFSNameKey, ascending: true)]
+    NotificationCenter.default.addObserver(forName: UIDocument.stateChangedNotification, object: nil, queue: .main) { notif in
+      print("Notif", notif)
+    }
+    NotificationCenter.default.addObserver(forName: NSNotification.Name.NSMetadataQueryDidFinishGathering, object: nil, queue: .main) { notif in
+      print("Notif:", notif);
+      
+      for result in metadataQuery.results {
+        if let item = result as? NSMetadataItem {
+          guard let url = item.value(forAttribute: NSMetadataItemURLKey) as? URL else { continue }
+          do {
+            try FileManager.default.startDownloadingUbiquitousItem(at: url)
+            print("Downloading", url.lastPathComponent)
+          } catch {
+            print("Download error", error)
+          }
+          
+        }
+       
+      }
+    }
     metadataQuery.start()
-    metadataQuery.delegate = self
   }
   
   
@@ -409,19 +490,26 @@ class MessagesViewController: MSMessagesAppViewController, MSStickerBrowserViewD
     guard let cloudDirectory = FileManager.default.url(forUbiquityContainerIdentifier: nil)?.appendingPathComponent("Documents") else { return }
     
     let localDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
-    print("Checking for local files to migrate:", cloudDirectory, localDirectory);
+    print("Checking for local files to migrate:\n", cloudDirectory.path,"\n", localDirectory.path);
 
     do {
       let files = try FileManager.default.contentsOfDirectory(at: localDirectory, includingPropertiesForKeys: nil);
+      
+      if (files.count == 0) {
+        return
+      }
       print("Files to Migrate:", files);
       
       try files.forEach { source in
         let destination = cloudDirectory.appendingPathComponent(source.lastPathComponent, isDirectory: false)
         print("Moving", source.lastPathComponent, "to", destination)
-        try FileManager.default.moveItem(at: source, to: destination)
+
+        try? FileManager.default.moveItem(at: source, to: destination)
+        try? FileManager.default.removeItem(at: source)
+
       }
     } catch {
-      print (error)
+      print ("ERROR:", error)
     }
     
 
