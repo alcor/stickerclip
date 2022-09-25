@@ -2,7 +2,7 @@ import UIKit
 import Messages
 import UniformTypeIdentifiers
 
-class MessagesViewController: MSMessagesAppViewController, MSStickerBrowserViewDataSource, UICollectionViewDataSource, UIGestureRecognizerDelegate {
+class MessagesViewController: MSMessagesAppViewController, MSStickerBrowserViewDataSource, UICollectionViewDataSource, UIGestureRecognizerDelegate, NSMetadataQueryDelegate {
   @IBOutlet weak var stickerView: MSStickerView!
   @IBOutlet weak var stickerOutlineView: UIImageView!
   @IBOutlet var stickerBrowser: MSStickerBrowserView!
@@ -35,16 +35,20 @@ class MessagesViewController: MSMessagesAppViewController, MSStickerBrowserViewD
   required init?(coder: NSCoder) {
     showBorder = (store.object(forKey: "showBorder") != nil) ? store.bool(forKey: "showBorder") : true;
     super.init(coder: coder);
+    
+    migrateOldFiles()
+    forceCloudSync()
   }
   override func awakeFromNib() {
     stickerCollection.allowsSelection = false;
   }
   
+
   func loadSortedFiles() -> Array<URL> {
-    let paths = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
-    guard let directoryURL = URL(string: paths.path) else {return []}
+    let directoryURL = getDocumentsDirectory()
+   
     do {
-      return try
+      let files = try
       FileManager.default.contentsOfDirectory(at: directoryURL,
                                               includingPropertiesForKeys:[.contentModificationDateKey],
                                               options: [.skipsHiddenFiles, .skipsSubdirectoryDescendants])
@@ -53,6 +57,7 @@ class MessagesViewController: MSMessagesAppViewController, MSStickerBrowserViewD
         let date1 = try $1.promisedItemResourceValues(forKeys:[.contentModificationDateKey]).contentModificationDate!
         return date0.compare(date1) == .orderedDescending
       })
+      return files;
     } catch {
       print (error)
       showInstructions(true)
@@ -289,8 +294,11 @@ class MessagesViewController: MSMessagesAppViewController, MSStickerBrowserViewD
     
     if let oldFile = stickerFile { try? FileManager.default.removeItem(at:oldFile) }
     
-    let directory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+
+    let directory = getDocumentsDirectory()
     let url = directory.appendingPathComponent(filename)
+    
+    
     
     stickerFile = createFile(image: img, originalFileData:originalFileData, url:url);
     let sticker = try? MSSticker(contentsOfFileURL: stickerFile!, localizedDescription: "Pasted Sticker");
@@ -377,12 +385,51 @@ class MessagesViewController: MSMessagesAppViewController, MSStickerBrowserViewD
     selectStickers(deleteButton)
     selectedStickers = []
     files = loadSortedFiles()
+    print("files", files)
     stickerCollection.reloadData()
   }
   
-  func getDocumentsDirectory() -> URL { // returns your application folder
-    let paths = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
-    let documentsDirectory = paths[0]
+  func forceCloudSync() {
+    print("Syncing Cloud")
+    let metadataQuery = NSMetadataQuery()
+    metadataQuery.notificationBatchingInterval = 1
+    metadataQuery.searchScopes = [NSMetadataQueryUbiquitousDataScope, NSMetadataQueryUbiquitousDocumentsScope]
+    metadataQuery.predicate = NSPredicate(format: "NSMetadataItemFSNameKey == '*'")
+    
+    NotificationCenter.default.addObserver(forName: NSNotification.Name.NSMetadataQueryDidUpdate, object: nil, queue: .main) { notif in
+      print("notif", notif, metadataQuery.results);
+    }
+    metadataQuery.sortDescriptors = [NSSortDescriptor(key: NSMetadataItemFSNameKey, ascending: true)]
+    metadataQuery.start()
+    metadataQuery.delegate = self
+  }
+  
+  
+  func migrateOldFiles() {
+    guard let cloudDirectory = FileManager.default.url(forUbiquityContainerIdentifier: nil)?.appendingPathComponent("Documents") else { return }
+    
+    let localDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+    print("Checking for local files to migrate:", cloudDirectory, localDirectory);
+
+    do {
+      let files = try FileManager.default.contentsOfDirectory(at: localDirectory, includingPropertiesForKeys: nil);
+      print("Files to Migrate:", files);
+      
+      try files.forEach { source in
+        let destination = cloudDirectory.appendingPathComponent(source.lastPathComponent, isDirectory: false)
+        print("Moving", source.lastPathComponent, "to", destination)
+        try FileManager.default.moveItem(at: source, to: destination)
+      }
+    } catch {
+      print (error)
+    }
+    
+
+    
+  }
+  
+  func getDocumentsDirectory() -> URL { // returns your iCloud or local documents folder
+    let documentsDirectory = FileManager.default.url(forUbiquityContainerIdentifier: nil)?.appendingPathComponent("Documents") ?? FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
     return documentsDirectory
   }
   
