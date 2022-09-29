@@ -471,8 +471,8 @@ class MessagesViewController: MSMessagesAppViewController, MSStickerBrowserViewD
         if let item = result as? NSMetadataItem {
           print("Added", result)
           guard let url = item.value(forAttribute: NSMetadataItemURLKey) as? URL else { continue }
-          self.files = self.loadSortedFiles()
-          self.stickerCollection.reloadData();
+//          self.files = self.loadSortedFiles()
+//          self.stickerCollection.reloadData();
         }
       }
       for result in removedMetadataItems! {
@@ -480,8 +480,8 @@ class MessagesViewController: MSMessagesAppViewController, MSStickerBrowserViewD
           print("Added", result)
           guard let url = item.value(forAttribute: NSMetadataItemURLKey) as? URL else { continue }
           
-          self.files = self.loadSortedFiles()
-          self.stickerCollection.reloadData();
+//          self.files = self.loadSortedFiles()
+//          self.stickerCollection.reloadData();
         }
       }
       metadataQuery.enableUpdates()
