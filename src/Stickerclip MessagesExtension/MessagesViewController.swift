@@ -532,6 +532,10 @@ class MessagesViewController: MSMessagesAppViewController, MSStickerBrowserViewD
       for result in metadataQuery.results {
         if let item = result as? NSMetadataItem {
           guard let url = item.value(forAttribute: NSMetadataItemURLKey) as? URL else { continue }
+
+          guard let status = item.value(forAttribute: NSMetadataUbiquitousItemDownloadingStatusKey) as? String else { continue }
+
+          if status == NSMetadataUbiquitousItemDownloadingStatusCurrent { continue }
           do {
             try FileManager.default.startDownloadingUbiquitousItem(at: url)
             print("Downloading", url.lastPathComponent)
