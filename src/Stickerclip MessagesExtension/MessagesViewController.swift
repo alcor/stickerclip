@@ -2,7 +2,7 @@ import UIKit
 import Messages
 import UniformTypeIdentifiers
 
-class MessagesViewController: MSMessagesAppViewController, MSStickerBrowserViewDataSource, UICollectionViewDataSource, UIGestureRecognizerDelegate, NSMetadataQueryDelegate {
+class MessagesViewController: MSMessagesAppViewController, MSStickerBrowserViewDataSource, UICollectionViewDataSource, UICollectionViewDelegateFlowLayout, UIGestureRecognizerDelegate, NSMetadataQueryDelegate {
   @IBOutlet weak var stickerView: MSStickerView!
   @IBOutlet weak var stickerOutlineView: UIImageView!
   @IBOutlet var stickerBrowser: MSStickerBrowserView!
@@ -19,7 +19,7 @@ class MessagesViewController: MSMessagesAppViewController, MSStickerBrowserViewD
   @IBOutlet weak var toolbarView: UIView!
   @IBOutlet weak var editToolbarView: UIView!
   @IBOutlet weak var instructionsView: UIView!
-  @IBOutlet weak var editorView: UIView!
+  @IBOutlet var editorView: UIView!
   @IBOutlet weak var pasteControl: UIControl!
   
   var sizes = [516, 408, 300, 192]
@@ -58,7 +58,7 @@ class MessagesViewController: MSMessagesAppViewController, MSStickerBrowserViewD
     let directoryURL = getDocumentsDirectory()
    
     do {
-      let files = try
+      var files = try
       FileManager.default.contentsOfDirectory(at: directoryURL,
                                               includingPropertiesForKeys:[.contentModificationDateKey],
                                               options: [.skipsHiddenFiles, .skipsSubdirectoryDescendants])
@@ -69,6 +69,11 @@ class MessagesViewController: MSMessagesAppViewController, MSStickerBrowserViewD
       })
       
       print("Loaded \(files.count) stickers") //, files.map({ url in url.lastPathComponent }).joined(separator:"\n"))
+      if let currentFile = stickerFile {
+        if let index = files.firstIndex(of: currentFile) {
+            files.remove(at: index)
+        }
+      }
       return files;
     } catch {
       print ("ERROR:", error)
@@ -76,6 +81,10 @@ class MessagesViewController: MSMessagesAppViewController, MSStickerBrowserViewD
     }
     return [];
   }
+  
+  
+  
+  //MARK: Collection
   
   func numberOfStickers(in stickerBrowserView: MSStickerBrowserView) -> Int {
     return files.count;
@@ -87,32 +96,59 @@ class MessagesViewController: MSMessagesAppViewController, MSStickerBrowserViewD
     return sticker;
   }
   
+   func numberOfSections(in collectionView: UICollectionView) -> Int{
+    return 2
+  }
+  
   func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
-    return files.count
+    if (section == 1) {
+      return files.count
+    } else {
+      return 1;
+    }
+  }
+  func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
+    if indexPath.section == 1 {
+      return CGSize(width: 100, height: 100)
+    } else {
+      return editorView.bounds.size//CGSize(width: 320, height: 200)
+    }
   }
   
   
-  func collectionView(_ collectionView: UICollectionView, viewForSupplementaryElementOfKind kind: String, at indexPath: IndexPath) -> UICollectionReusableView {
+//  func collectionView(_ collectionView: UICollectionView, viewForSupplementaryElementOfKind kind: String, at indexPath: IndexPath) -> UICollectionReusableView {
+//
+//    if (kind == UICollectionView.elementKindSectionHeader) {
+//      let header = collectionView.dequeueReusableSupplementaryView(ofKind: UICollectionView.elementKindSectionHeader, withReuseIdentifier: "Header", for: indexPath);
+//      if (showInstructions) {
+//        header.frame = instructionsView.frame
+//        instructionsView.frame = header.bounds
+//        header.addSubview(instructionsView)
+//      } else {
+//        editorView.frame = header.bounds
+//        header.addSubview(editorView)
+//      }
+//
+//      return header
+//    }
+//
+//    let footer = collectionView.dequeueReusableSupplementaryView(ofKind: UICollectionView.elementKindSectionFooter, withReuseIdentifier: "Footer", for: indexPath);
+//    return footer
+//
+//  }
+  func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
+    if indexPath.section == 0 {
+      let header = collectionView.dequeueReusableCell(withReuseIdentifier: "Editor", for: indexPath)
+      instructionsView.frame = header.bounds
+      editorView.frame = header.bounds
+      header.addSubview(instructionsView)
+      header.addSubview(editorView)
 
-    if (kind == UICollectionView.elementKindSectionHeader) {
-      let header = collectionView.dequeueReusableSupplementaryView(ofKind: UICollectionView.elementKindSectionHeader, withReuseIdentifier: "Header", for: indexPath);
-      if (showInstructions) {
-        header.frame = instructionsView.frame
-        instructionsView.frame = header.bounds
-        header.addSubview(instructionsView)
-      } else {
-        editorView.frame = header.bounds
-        header.addSubview(editorView)
-      }
-      
+      instructionsView.isHidden = !showInstructions
+      editorView.isHidden = showInstructions
+
       return header
     }
-    
-    let footer = collectionView.dequeueReusableSupplementaryView(ofKind: UICollectionView.elementKindSectionFooter, withReuseIdentifier: "Footer", for: indexPath);
-    return footer
-    
-  }
-  func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
     let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "Sticker", for: indexPath)
     let stickerView = cell.contentView as? MSStickerView
     
@@ -468,21 +504,21 @@ class MessagesViewController: MSMessagesAppViewController, MSStickerBrowserViewD
 //      print("Updated", addedMetadataItems, removedMetadataItems, changedMetadataItems)
 
       for result in addedMetadataItems! {
-        if let item = result as? NSMetadataItem {
+//        if let item = result as? NSMetadataItem {
           print("Added", result)
-          guard let url = item.value(forAttribute: NSMetadataItemURLKey) as? URL else { continue }
+//          guard let url = result.value(forAttribute: NSMetadataItemURLKey) as? URL else { continue }
 //          self.files = self.loadSortedFiles()
 //          self.stickerCollection.reloadData();
-        }
+//        }
       }
       for result in removedMetadataItems! {
-        if let item = result as? NSMetadataItem {
+//        if let item = result as? NSMetadataItem {
           print("Added", result)
-          guard let url = item.value(forAttribute: NSMetadataItemURLKey) as? URL else { continue }
+//          guard let url = result.value(forAttribute: NSMetadataItemURLKey) as? URL else { continue }
           
 //          self.files = self.loadSortedFiles()
 //          self.stickerCollection.reloadData();
-        }
+//        }
       }
       metadataQuery.enableUpdates()
 
@@ -525,7 +561,7 @@ class MessagesViewController: MSMessagesAppViewController, MSStickerBrowserViewD
       }
       print("Files to Migrate:", files);
       
-      try files.forEach { source in
+       files.forEach { source in
         let destination = cloudDirectory.appendingPathComponent(source.lastPathComponent, isDirectory: false)
         print("Moving", source.lastPathComponent, "to", destination)
 
