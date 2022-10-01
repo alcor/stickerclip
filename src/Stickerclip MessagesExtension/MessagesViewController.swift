@@ -22,7 +22,7 @@ class MessagesViewController: MSMessagesAppViewController, MSStickerBrowserViewD
   @IBOutlet var editorView: UIView!
   @IBOutlet weak var pasteControl: UIControl!
   
-  var sizes = [516, 408, 300, 192]
+  var sizes = [516, 408, 300, 192, 96]
   var size = 408
   var forcePaste = false
   
@@ -38,6 +38,7 @@ class MessagesViewController: MSMessagesAppViewController, MSStickerBrowserViewD
   var selectedStickers: Array<String> = []
   var token = FileManager.default.ubiquityIdentityToken
   var showInstructions = false
+  var pastedSticker: MSSticker?
   required init?(coder: NSCoder) {
     showBorder = (store.object(forKey: "showBorder") != nil) ? store.bool(forKey: "showBorder") : true;
     super.init(coder: coder);
@@ -147,6 +148,7 @@ class MessagesViewController: MSMessagesAppViewController, MSStickerBrowserViewD
       instructionsView.isHidden = !showInstructions
       editorView.isHidden = showInstructions
 
+      stickerView.sticker = pastedSticker
       return header
     }
     let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "Sticker", for: indexPath)
@@ -402,7 +404,9 @@ class MessagesViewController: MSMessagesAppViewController, MSStickerBrowserViewD
     let sticker = try? MSSticker(contentsOfFileURL: stickerFile!, localizedDescription: "Pasted Sticker");
     
     if ((sticker) != nil) {
+      pastedSticker = sticker
       stickerView.sticker = sticker
+      stickerView.startAnimating();
       stickerView.isHidden = false
       toolbarView.isHidden = false
       pasteHintLabel.isHidden = true
