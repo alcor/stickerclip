@@ -36,7 +36,7 @@ class MessagesViewController: MSMessagesAppViewController, MSStickerBrowserViewD
   var stickers: Array<MSSticker> = []
   var content: UIImage?
   var selectedStickers: Array<String> = []
-  var token = FileManager.default.ubiquityIdentityToken
+  var token: String? //FileManager.default.ubiquityIdentityToken
   var showInstructions = false
   var pastedSticker: MSSticker?
   required init?(coder: NSCoder) {
