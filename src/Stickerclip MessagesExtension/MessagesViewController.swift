@@ -22,7 +22,7 @@ class MessagesViewController: MSMessagesAppViewController, MSStickerBrowserViewD
   @IBOutlet var editorView: UIView!
   @IBOutlet weak var pasteControl: UIControl!
   
-  var sizes = [516, 408, 300, 192, 96]
+  var sizes = [516, 408, 300, 192, 144, 96]
   var size = 408
   var forcePaste = false
   
