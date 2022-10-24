@@ -177,7 +177,7 @@ class MessagesViewController: MSMessagesAppViewController, MSStickerBrowserViewD
     stickerView?.addGestureRecognizer(stickerViewHoldGesture)
     
     if (selected) {
-      cell.backgroundColor = .systemRed
+      cell.backgroundColor = .tintColor
       cell.layer.cornerRadius = 10
     } else {
       cell.backgroundColor = .clear
